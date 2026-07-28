@@ -6,7 +6,7 @@ use App\Http\Controllers\TaskController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('throttle:api')->group(function () {
+Route::middleware('throttle:60,1')->group(function () {
     Route::controller(ProjectController::class)
         ->prefix('projects')
         ->group(function () {
