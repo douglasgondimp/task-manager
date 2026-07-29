@@ -16,7 +16,7 @@ Route::middleware('throttle:60,1')->group(function () {
         });
 
     Route::controller(ProjectTaskController::class)
-        ->prefix('projects/{projetct}')
+        ->prefix('projects/{project}')
         ->group(function () {
             Route::get('/tasks', 'index');
             Route::post('/tasks', 'store');
