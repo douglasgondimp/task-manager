@@ -23,6 +23,11 @@ class Task extends Model
         'due_date',
     ];
 
+    protected $attributes = [
+        'status' => 'todo',
+        'priority' => 'medium',
+    ];
+
     protected function casts(): array
     {
         return [
