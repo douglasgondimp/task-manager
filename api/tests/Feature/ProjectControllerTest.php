@@ -118,4 +118,87 @@ class ProjectControllerTest extends TestCase
                 ],
             ]);
     }
+
+    /**
+     * Test creating a new project with valid data.
+     */
+    public function test_can_create_project_with_valid_data(): void
+    {
+        $projectData = [
+            'name' => 'Novo Projeto',
+            'description' => 'Descrição do projeto',
+        ];
+
+        $response = $this->postJson('/api/projects', $projectData);
+
+        $response->assertStatus(201)
+            ->assertJson([
+                'message' => 'Projeto criado comm sucesso!'
+            ]);
+
+        $this->assertDatabaseHas('projects', [
+            'name' => 'Novo Projeto',
+            'description' => 'Descrição do projeto',
+            'status' => 'active',
+        ]);
+    }
+
+    /**
+     * Test creating a project with only required fields.
+     */
+    public function test_can_create_project_with_only_required_fields(): void
+    {
+        $projectData = [
+            'name' => 'Projeto Apenas Nome',
+        ];
+
+        $response = $this->postJson('/api/projects', $projectData);
+
+        $response->assertStatus(201)
+            ->assertJson([
+                'message' => 'Projeto criado comm sucesso!'
+            ]);
+
+        $this->assertDatabaseHas('projects', [
+            'name' => 'Projeto Apenas Nome',
+            'description' => null,
+            'status' => 'active',
+        ]);
+    }
+
+    /**
+     * Test creating a project without name fails validation.
+     */
+    public function test_cannot_create_project_without_name(): void
+    {
+        $projectData = [
+            'description' => 'Descrição sem nome',
+        ];
+
+        $response = $this->postJson('/api/projects', $projectData);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['name']);
+
+        $this->assertDatabaseMissing('projects', [
+            'description' => 'Descrição sem nome',
+        ]);
+    }
+
+    /**
+     * Test creating a project with name exceeding max length fails.
+     */
+    public function test_cannot_create_project_with_name_too_long(): void
+    {
+        $projectData = [
+            'name' => str_repeat('a', 51), // 51 characters, max is 50
+        ];
+
+        $response = $this->postJson('/api/projects', $projectData);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['name']);
+
+        $this->assertDatabaseCount('projects', 0);
+    }
 }
