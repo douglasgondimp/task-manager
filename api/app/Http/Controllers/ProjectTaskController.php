@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProjectTasks\IndexRequest;
+use App\Http\Requests\ProjectTasks\StoreRequest;
 use App\Http\Resources\TaskResource;
 use App\Models\Project;
 use App\Services\TaskService;
@@ -25,9 +26,11 @@ class ProjectTaskController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreRequest $request, Project $project)
     {
-        //
+        $task = $project->tasks()->create($request->validated());
+
+        return new TaskResource($task);
     }
 
     /**
