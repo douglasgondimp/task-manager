@@ -25,7 +25,8 @@ Route::middleware('throttle:60,1')->group(function () {
     Route::controller(TaskController::class)
         ->prefix('tasks')
         ->group(function () {
+            Route::get('/{task}', 'show');
             Route::patch('/{task}', 'update');
-            Route::delete('/{task}', 'delete');
+            Route::delete('/{task}', 'destroy');
         });
 });
