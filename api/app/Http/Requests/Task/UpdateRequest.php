@@ -57,7 +57,7 @@ class UpdateRequest extends FormRequest
         return [
             'title.max'     => "Limite de caracteres atingidos. Max: :value",
             'status.enum'   => "Status inválido. Valores aceitos: {$statuses}.",
-            'prioriry.enum' => "Prioridade inválida. Valores aceitos: {$priorities}",
+            'priority.enum' => "Prioridade inválida. Valores aceitos: {$priorities}",
             'due_date.date' => "Formato de data inválido. Formato válido: Y-m-d"
         ];
     }

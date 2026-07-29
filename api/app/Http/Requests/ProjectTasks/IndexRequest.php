@@ -29,9 +29,11 @@ class IndexRequest extends FormRequest
             "search"       => ["sometimes", "string"],
             "status"       => ["sometimes", Rule::enum(TaskStatus::class)],
             "priority"     => ["sometimes", Rule::enum(TaskPriority::class)],
-            "is_overdue"   => ["sometimes", "in:true,false,1,0"],
+            "is_overdue"   => ["sometimes", "in:true,false"],
             "created_at"   => ["sometimes", "array", "size:2"],
-            "created_at.*" => ["date"]
+            "created_at.0" => ["required_with:created_at", "date"],
+            "created_at.1" => ["required_with:created_at", "date", "after_or_equal:created_at.0"],
+
         ];
     }
 
@@ -42,7 +44,7 @@ class IndexRequest extends FormRequest
 
         return [
             'status.enum'        => "Status inválido. Valores aceitos: {$statuses}.",
-            'prioriry.enum'      => "Prioridade inválida. Valores aceitos: {$priorities}",
+            'priority.enum'      => "Prioridade inválida. Valores aceitos: {$priorities}",
             'is_overdue.in'      => "O campo exige um valor booleano",
             'created_at.array'   => 'O filtro de datas deve ser um array.',
             'created_at.size'    => 'Informe exatamente uma data inicial e uma data final.',

@@ -28,8 +28,8 @@ class StoreRequest extends FormRequest
         return [
             'title'       => ['required', 'string'],
             'description' => ['nullable', 'string'],
-            'status'      => ['nullable', Rule::enum(TaskStatus::class)],
-            'priority'    => ['nullable', Rule::enum(TaskPriority::class)],
+            'status'      => ['sometimes', Rule::enum(TaskStatus::class)],
+            'priority'    => ['sometimes', Rule::enum(TaskPriority::class)],
             'due_date'    => ['nullable', 'date'],
         ];
     }
@@ -42,7 +42,7 @@ class StoreRequest extends FormRequest
         return [
             'title.required'      => "Título da tarefa é obrigatório.",
             'status.enum'         => "Status inválido. Valores aceitos: {$statuses}.",
-            'prioriry.enum'       => "Prioridade inválida. Valores aceitos: {$priorities}",
+            'priority.enum'       => "Prioridade inválida. Valores aceitos: {$priorities}",
             'due_date.date'       => "Data de validade informada incorretamente. Valor aceito: Y-m-d",
         ];
     }
