@@ -230,4 +230,176 @@ class ProjectTaskControllerTest extends TestCase
                 'data' => [],
             ]);
     }
+
+    /**
+     * Test creating a task for a project with valid data.
+     */
+    public function test_can_create_task_for_project(): void
+    {
+        $project = Project::factory()->create();
+
+        $taskData = [
+            'title' => 'Nova Tarefa',
+            'description' => 'Descrição da tarefa',
+            'status' => 'todo',
+            'priority' => 'high',
+            'due_date' => now()->addWeek()->format('Y-m-d'),
+        ];
+
+        $response = $this->postJson("/api/projects/{$project->id}/tasks", $taskData);
+
+        $response->assertStatus(201)
+            ->assertJsonStructure([
+                'data' => [
+                    'id',
+                    'title',
+                    'description',
+                    'status',
+                    'priority',
+                    'due_date',
+                    'created_at',
+                    'updated_at',
+                ],
+            ])
+            ->assertJson([
+                'data' => [
+                    'title' => 'Nova Tarefa',
+                    'description' => 'Descrição da tarefa',
+                    'status' => ['value' => 'todo'],
+                    'priority' => ['value' => 'high'],
+                ],
+            ]);
+
+        $this->assertDatabaseHas('tasks', [
+            'project_id' => $project->id,
+            'title' => 'Nova Tarefa',
+            'status' => 'todo',
+            'priority' => 'high',
+        ]);
+    }
+
+    /**
+     * Test creating a task with only required fields.
+     */
+    public function test_can_create_task_with_only_required_fields(): void
+    {
+        $project = Project::factory()->create();
+
+        $taskData = [
+            'title' => 'Tarefa Apenas Título',
+        ];
+
+        $response = $this->postJson("/api/projects/{$project->id}/tasks", $taskData);
+
+        $response->assertStatus(201)
+            ->assertJson([
+                'data' => [
+                    'title' => 'Tarefa Apenas Título',
+                    'description' => null,
+                    'status' => ['value' => 'todo'],
+                    'priority' => ['value' => 'medium'],
+                ],
+            ]);
+
+        $this->assertDatabaseHas('tasks', [
+            'project_id' => $project->id,
+            'title' => 'Tarefa Apenas Título',
+            'description' => null,
+        ]);
+    }
+
+    /**
+     * Test creating a task without title fails validation.
+     */
+    public function test_cannot_create_task_without_title(): void
+    {
+        $project = Project::factory()->create();
+
+        $taskData = [
+            'description' => 'Descrição sem título',
+        ];
+
+        $response = $this->postJson("/api/projects/{$project->id}/tasks", $taskData);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['title']);
+
+        $this->assertDatabaseMissing('tasks', [
+            'description' => 'Descrição sem título',
+        ]);
+    }
+
+    /**
+     * Test creating a task with invalid status fails validation.
+     */
+    public function test_cannot_create_task_with_invalid_status(): void
+    {
+        $project = Project::factory()->create();
+
+        $taskData = [
+            'title' => 'Tarefa',
+            'status' => 'invalid_status',
+        ];
+
+        $response = $this->postJson("/api/projects/{$project->id}/tasks", $taskData);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['status']);
+
+        $this->assertDatabaseCount('tasks', 0);
+    }
+
+    /**
+     * Test creating a task with invalid priority fails validation.
+     */
+    public function test_cannot_create_task_with_invalid_priority(): void
+    {
+        $project = Project::factory()->create();
+
+        $taskData = [
+            'title' => 'Tarefa',
+            'priority' => 'invalid_priority',
+        ];
+
+        $response = $this->postJson("/api/projects/{$project->id}/tasks", $taskData);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['priority']);
+
+        $this->assertDatabaseCount('tasks', 0);
+    }
+
+    /**
+     * Test creating a task with invalid due_date format fails validation.
+     */
+    public function test_cannot_create_task_with_invalid_due_date(): void
+    {
+        $project = Project::factory()->create();
+
+        $taskData = [
+            'title' => 'Tarefa',
+            'due_date' => 'invalid-date',
+        ];
+
+        $response = $this->postJson("/api/projects/{$project->id}/tasks", $taskData);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['due_date']);
+
+        $this->assertDatabaseCount('tasks', 0);
+    }
+
+    /**
+     * Test creating a task for non-existent project returns 404.
+     */
+    public function test_cannot_create_task_for_non_existent_project(): void
+    {
+        $taskData = [
+            'title' => 'Tarefa',
+        ];
+
+        $response = $this->postJson('/api/projects/999/tasks', $taskData);
+
+        $response->assertStatus(404);
+    }
 }
