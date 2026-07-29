@@ -12,8 +12,7 @@ class TaskService
 {
     public function getTasksByProject(Project $project, array $filters = []): CursorPaginator
     {
-        $query = Task::query()
-            ->where('project_id', $project->id);
+        $query = $project->tasks()->getQuery();
 
         $query = $this->filterTasks($query, $filters);
 
@@ -35,20 +34,14 @@ class TaskService
                 }
             )->when(
                 $filters["status"] ?? null,
-                function ($query, string $status) {
-                    $query->where('status', '=', $status);
-                }
+                fn($query, string $status) => $query->where('status', '=', $status)
+
             )->when(
                 $filters["priority"] ?? null,
-                function ($query, string $priority) {
-                    $query->where('priority', '=', $priority);
-                }
+                fn($query, string $priority) => $query->where('priority', '=', $priority)
             )->when(
                 $filters["is_overdue"] ?? false,
-                function ($query) {
-                    $query->whereDate('due_date', '<', now())
-                        ->where('status', '!=', 'done');
-                }
+                fn($query) => $query->overdue()
             )->when(
                 isset($filters["created_at"]) && is_array($filters["created_at"]),
                 function ($query) use ($filters) {
