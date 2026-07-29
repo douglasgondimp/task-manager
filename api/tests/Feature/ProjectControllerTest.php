@@ -201,4 +201,154 @@ class ProjectControllerTest extends TestCase
 
         $this->assertDatabaseCount('projects', 0);
     }
+
+    /**
+     * Test updating a project with valid data.
+     */
+    public function test_can_update_project_with_valid_data(): void
+    {
+        $project = Project::factory()->create([
+            'name' => 'Projeto Original',
+            'description' => 'Descrição original',
+        ]);
+
+        $updateData = [
+            'name' => 'Projeto Atualizado',
+            'description' => 'Nova descrição',
+        ];
+
+        $response = $this->patchJson("/api/projects/{$project->id}", $updateData);
+
+        $response->assertStatus(200);
+
+        $this->assertDatabaseHas('projects', [
+            'id' => $project->id,
+            'name' => 'Projeto Atualizado',
+            'description' => 'Nova descrição',
+        ]);
+    }
+
+    /**
+     * Test updating only the name of a project.
+     */
+    public function test_can_update_project_name_only(): void
+    {
+        $project = Project::factory()->create([
+            'name' => 'Nome Original',
+            'description' => 'Descrição original',
+        ]);
+
+        $updateData = [
+            'name' => 'Nome Atualizado',
+        ];
+
+        $response = $this->patchJson("/api/projects/{$project->id}", $updateData);
+
+        $response->assertStatus(200);
+
+        $this->assertDatabaseHas('projects', [
+            'id' => $project->id,
+            'name' => 'Nome Atualizado',
+            'description' => 'Descrição original',
+        ]);
+    }
+
+    /**
+     * Test updating project status.
+     */
+    public function test_can_update_project_status(): void
+    {
+        $project = Project::factory()->create([
+            'status' => 'active',
+        ]);
+
+        $updateData = [
+            'status' => 'archived',
+        ];
+
+        $response = $this->patchJson("/api/projects/{$project->id}", $updateData);
+
+        $response->assertStatus(200);
+
+        $this->assertDatabaseHas('projects', [
+            'id' => $project->id,
+            'status' => 'archived',
+        ]);
+    }
+
+    /**
+     * Test updating a project without any data fails validation.
+     */
+    public function test_cannot_update_project_without_any_data(): void
+    {
+        $project = Project::factory()->create();
+
+        $response = $this->patchJson("/api/projects/{$project->id}", []);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['request']);
+
+        $this->assertDatabaseHas('projects', [
+            'id' => $project->id,
+            'name' => $project->name,
+        ]);
+    }
+
+    /**
+     * Test updating a project with invalid status fails validation.
+     */
+    public function test_cannot_update_project_with_invalid_status(): void
+    {
+        $project = Project::factory()->create();
+
+        $updateData = [
+            'status' => 'invalid_status',
+        ];
+
+        $response = $this->patchJson("/api/projects/{$project->id}", $updateData);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['status']);
+
+        $this->assertDatabaseHas('projects', [
+            'id' => $project->id,
+            'status' => $project->status,
+        ]);
+    }
+
+    /**
+     * Test updating a project with name exceeding max length fails.
+     */
+    public function test_cannot_update_project_with_name_too_long(): void
+    {
+        $project = Project::factory()->create();
+
+        $updateData = [
+            'name' => str_repeat('a', 51), // 51 characters, max is 50
+        ];
+
+        $response = $this->patchJson("/api/projects/{$project->id}", $updateData);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['name']);
+
+        $this->assertDatabaseHas('projects', [
+            'id' => $project->id,
+            'name' => $project->name,
+        ]);
+    }
+
+    /**
+     * Test updating a non-existent project returns 404.
+     */
+    public function test_cannot_update_non_existent_project(): void
+    {
+        $updateData = [
+            'name' => 'Nome Atualizado',
+        ];
+
+        $response = $this->patchJson('/api/projects/999', $updateData);
+
+        $response->assertStatus(404);
+    }
 }
