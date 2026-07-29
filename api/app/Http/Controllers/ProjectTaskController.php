@@ -17,7 +17,7 @@ class ProjectTaskController extends Controller
      */
     public function index(IndexRequest $request, Project $project)
     {
-        $tasks = $this->taskService->getTasksByProject($project, $request->validated())->paginate();
+        $tasks = $this->taskService->getTasksByProject($project, $request->validated());
 
         return TaskResource::collection($tasks);
     }

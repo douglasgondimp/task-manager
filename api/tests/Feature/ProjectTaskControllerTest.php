@@ -36,11 +36,17 @@ class ProjectTaskControllerTest extends TestCase
                     ],
                 ],
                 'meta' => [
-                    'total',
+                    'path',
                     'per_page',
-                    'current_page',
-                    'last_page',
+                    'next_cursor',
+                    'prev_cursor',
                 ],
+                'links' => [
+                    'first',
+                    'last',
+                    'prev',
+                    'next',
+                ]
             ])
             ->assertJsonCount(3, 'data');
     }

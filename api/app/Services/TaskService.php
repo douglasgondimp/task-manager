@@ -6,15 +6,20 @@ use App\Models\Project;
 use App\Models\Task;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\CursorPaginator;
 
 class TaskService
 {
-    public function getTasksByProject(Project $project, array $filters = []): Builder
+    public function getTasksByProject(Project $project, array $filters = []): CursorPaginator
     {
         $query = Task::query()
             ->where('project_id', $project->id);
 
-        return $this->filterTasks($query, $filters);
+        $query = $this->filterTasks($query, $filters);
+
+        return $query->latest('id')
+            ->cursorPaginate(20)
+            ->withqueryString();
     }
 
     private function filterTasks(Builder $query, array $filters = []): Builder
