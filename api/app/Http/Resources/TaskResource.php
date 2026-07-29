@@ -28,8 +28,7 @@ class TaskResource extends JsonResource
                 'label' => $this->priority->label()
             ],
             'due_date'   => $this->due_date,
-            'is_overdue' => $this->due_date !== null
-                && $this->due_date->isPast()
+            'is_overdue' => $this->due_date?->isBefore(today())
                 && $this->status !== TaskStatus::Done,
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
