@@ -2,6 +2,8 @@
 import { ref, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProjects } from '@/composables/useProject'
+import AppModal from '@/components/AppModal.vue'
+import ProjectForm from '@/components/ProjectForm.vue'
 
 const router = useRouter()
 
@@ -15,12 +17,25 @@ const {
     fetchProjects,
     loadMoreProjects,
     resetProjects,
+    createProject,
 } = useProjects()
 
 const perPage = ref(15)
 const sentinel = ref<HTMLElement | null>(null)
+const showCreateModal = ref(false)
+const createError = ref<string | null>(null)
 
 let observer: IntersectionObserver | null = null
+
+async function onCreateProject(data: { name: string; description?: string | null }) {
+    createError.value = null
+    const success = await createProject(data)
+    if (success) {
+        showCreateModal.value = false
+    } else {
+        createError.value = 'Erro ao criar projeto. Tente novamente.'
+    }
+}
 
 function statusClass(status: string): string {
     const map: Record<string, string> = {
@@ -77,7 +92,14 @@ onUnmounted(() => {
         <div class="mb-6 flex items-center justify-between">
             <h1 class="text-2xl font-bold text-white">Projetos</h1>
 
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-3">
+                <button @click="showCreateModal = true"
+                    class="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Novo Projeto
+                </button>
                 <label for="per-page" class="text-sm text-gray-400">Itens por página:</label>
                 <select id="per-page" v-model="perPage"
                     class="rounded-lg border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none">
@@ -138,5 +160,11 @@ onUnmounted(() => {
                 </span>
             </div>
         </template>
+
+        <!-- Create project modal -->
+        <AppModal v-model="showCreateModal" title="Novo Projeto">
+            <p v-if="createError" class="mb-3 text-sm text-red-400">{{ createError }}</p>
+            <ProjectForm @submit="onCreateProject" @cancel="showCreateModal = false" />
+        </AppModal>
     </div>
 </template>
