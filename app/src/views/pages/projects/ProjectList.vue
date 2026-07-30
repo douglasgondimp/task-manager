@@ -1,20 +1,25 @@
 <script setup lang="ts">
 import { ref, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { projectService } from '@/services/project.service'
-import type { Project } from '@/interfaces/project'
+import { useProjects } from '@/composables/useProject'
 
 const router = useRouter()
 
-const projects = ref<Project[]>([])
-const loading = ref(false)
-const loadingMore = ref(false)
-const error = ref<string | null>(null)
-const loadingMoreError = ref<string | null>(null)
-const nextCursor = ref<string | null>(null)
-const hasMore = ref(true)
+const {
+    projects,
+    loading,
+    loadingMore,
+    error,
+    loadingMoreError,
+    hasMore,
+    fetchProjects,
+    loadMoreProjects,
+    resetProjects,
+} = useProjects()
+
 const perPage = ref(15)
 const sentinel = ref<HTMLElement | null>(null)
+
 let observer: IntersectionObserver | null = null
 
 function statusClass(status: string): string {
@@ -29,51 +34,16 @@ function formatDate(dateStr: string): string {
     return new Date(dateStr).toLocaleDateString('pt-BR')
 }
 
-async function loadProjects() {
-    loading.value = true
-    error.value = null
-    loadingMoreError.value = null
-
-    try {
-        const response = await projectService.list(perPage.value)
-        projects.value = response.data
-        nextCursor.value = response.meta.next_cursor
-        hasMore.value = response.meta.next_cursor !== null
-    } catch (e) {
-        error.value = 'Erro ao carregar projetos'
-    } finally {
-        loading.value = false
-    }
-}
-
-async function loadMore() {
-    if (loading.value || loadingMore.value || !hasMore.value || !nextCursor.value) return
-
-    loadingMore.value = true
-    loadingMoreError.value = null
-
-    try {
-        const response = await projectService.list(perPage.value, nextCursor.value)
-        projects.value.push(...response.data)
-        nextCursor.value = response.meta.next_cursor
-        hasMore.value = response.meta.next_cursor !== null
-    } catch (e) {
-        loadingMoreError.value = 'Erro ao carregar mais projetos'
-    } finally {
-        loadingMore.value = false
-    }
-}
-
 function setupObserver() {
-    if (observer) observer.disconnect()
+    observer?.disconnect()
 
     observer = new IntersectionObserver(
-        (entries) => {
-            if (entries[0]?.isIntersecting && hasMore.value && !loadingMore.value) {
-                void loadMore()
+        ([entry]) => {
+            if (entry?.isIntersecting) {
+                void loadMoreProjects(perPage.value)
             }
         },
-        { rootMargin: '0px' },
+        { rootMargin: '50px' },
     )
 
     if (sentinel.value) {
@@ -82,21 +52,23 @@ function setupObserver() {
 }
 
 watch(perPage, async () => {
-    nextCursor.value = null
-    hasMore.value = true
-    await loadProjects()
+    resetProjects()
+
+    await fetchProjects(perPage.value)
     await nextTick()
+
     setupObserver()
 })
 
 onMounted(async () => {
-    await loadProjects()
+    await fetchProjects(perPage.value)
     await nextTick()
+
     setupObserver()
 })
 
 onUnmounted(() => {
-    if (observer) observer.disconnect()
+    observer?.disconnect()
 })
 </script>
 
