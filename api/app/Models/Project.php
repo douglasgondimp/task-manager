@@ -17,6 +17,10 @@ class Project extends Model
         'status',
     ];
 
+    protected $attributes = [
+        'status' => ProjectStatus::Active
+    ];
+
     protected function casts(): array
     {
         return [
