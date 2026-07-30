@@ -1,85 +1,37 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from 'vue-router'
-import HelloWorld from './components/HelloWorld.vue'
 </script>
 
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
+    <div class="h-screen">
+        <!-- Header fixed at top -->
+        <header
+            class="fixed top-0 left-0 right-0 z-30 h-14 border-b border-gray-950/5 bg-white dark:border-white/10 dark:bg-gray-950">
+            <div class="flex h-full items-center px-6">
+                <h4 class="text-lg text-blue-600 dark:text-white">Task Manager</h4>
+            </div>
+        </header>
 
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
+        <!-- Sidebar fixed on the left with full height -->
+        <aside
+            class="fixed left-0 top-0 z-20 h-screen w-50 border-r border-gray-950/5 bg-gray-50 pt-14 dark:border-white/10 dark:bg-gray-900">
+            <nav class="flex flex-col gap-1 p-4">
+                <RouterLink to="/"
+                    class="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-800">
+                    Sobre
+                </RouterLink>
+                <RouterLink to="/projects"
+                    class="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-800">
+                    Projetos
+                </RouterLink>
+            </nav>
+        </aside>
 
-      <nav>
-        <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
-      </nav>
+        <!-- Main content -->
+        <main class="min-h-screen pl-55 pt-14">
+            <div class="p-6">
+                <RouterView />
+            </div>
+        </main>
     </div>
-  </header>
-
-  <RouterView />
 </template>
-
-<style scoped>
-header {
-  line-height: 1.5;
-  max-height: 100vh;
-}
-
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
-}
-
-nav {
-  width: 100%;
-  font-size: 12px;
-  text-align: center;
-  margin-top: 2rem;
-}
-
-nav a.router-link-exact-active {
-  color: var(--color-text);
-}
-
-nav a.router-link-exact-active:hover {
-  background-color: transparent;
-}
-
-nav a {
-  display: inline-block;
-  padding: 0 1rem;
-  border-left: 1px solid var(--color-border);
-}
-
-nav a:first-of-type {
-  border: 0;
-}
-
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
-
-  nav {
-    text-align: left;
-    margin-left: -1rem;
-    font-size: 1rem;
-
-    padding: 1rem 0;
-    margin-top: 1rem;
-  }
-}
-</style>
