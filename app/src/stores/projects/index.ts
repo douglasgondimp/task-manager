@@ -13,6 +13,10 @@ export const useProjectStore = defineStore('projects', () => {
         projects.value = data
     }
 
+    function addProject(project: Project): void {
+        projects.value.unshift(project)
+    }
+
     function appendProjects(data: Project[]): void {
         projects.value.push(...data)
     }
@@ -38,6 +42,7 @@ export const useProjectStore = defineStore('projects', () => {
         nextCursor,
         hasMore,
         setProjects,
+        addProject,
         appendProjects,
         setSelectedProject,
         setPagination,
