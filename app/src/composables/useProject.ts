@@ -99,6 +99,19 @@ export function useProjects() {
         }
     }
 
+    async function updateProject(id: number, data: Partial<ProjectCreateData & { status: 'active' | 'archived' }>): Promise<boolean> {
+        error.value = null
+
+        try {
+            const updated = await projectService.update(id, data)
+            projectStore.updateSelectedProject(updated)
+            return true
+        } catch {
+            error.value = 'Erro ao atualizar projeto'
+            return false
+        }
+    }
+
     function resetProjects(): void {
         projectStore.resetProjects()
 
@@ -121,6 +134,7 @@ export function useProjects() {
         loadMoreProjects,
         fetchProject,
         createProject,
+        updateProject,
         resetProjects,
     }
 }
