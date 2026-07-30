@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { projectService } from '@/services/project.service'
 import { useProjectStore } from '@/stores/projects'
+import type { ProjectCreateData } from '@/interfaces/project'
 
 export function useProjects() {
     const projectStore = useProjectStore()
@@ -85,6 +86,19 @@ export function useProjects() {
         }
     }
 
+    async function createProject(data: ProjectCreateData): Promise<boolean> {
+        error.value = null
+
+        try {
+            const project = await projectService.create(data)
+            projectStore.addProject(project.project)
+            return true
+        } catch {
+            error.value = 'Erro ao criar projeto'
+            return false
+        }
+    }
+
     function resetProjects(): void {
         projectStore.resetProjects()
 
@@ -106,6 +120,7 @@ export function useProjects() {
         fetchProjects,
         loadMoreProjects,
         fetchProject,
+        createProject,
         resetProjects,
     }
 }
