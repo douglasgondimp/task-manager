@@ -4,6 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { VueDraggable, type DraggableEvent } from 'vue-draggable-plus'
 import { useTask } from '@/composables/useTask'
 import { useProjects } from '@/composables/useProject'
+import AppModal from '@/components/AppModal.vue'
+import TaskForm from '@/components/TaskForm.vue'
 import type { Task } from '@/interfaces/task'
 
 const route = useRoute()
@@ -23,11 +25,14 @@ const {
     updatingTaskIds,
     fetchTasks,
     updateTaskStatus,
+    createTask,
 } = useTask()
 
 const loading = ref(true)
 const error = ref<string | null>(null)
 let draggedTaskId: number | null = null
+const showCreateModal = ref(false)
+const createError = ref<string | null>(null)
 
 const columns = [
     { key: 'todo', label: 'A fazer' },
@@ -99,6 +104,27 @@ async function onTaskAdd(columnStatus: string, event: DraggableEvent): Promise<v
     await updateTaskStatus(task.id, columnStatus as Task['status']['value'])
 }
 
+async function onCreateTask(data: {
+    title: string
+    description?: string | null
+    priority: 'low' | 'medium' | 'high'
+    due_date?: string | null
+}) {
+    createError.value = null
+    const projectId = Number(route.params.id)
+    const task = await createTask(projectId, {
+        title: data.title,
+        description: data.description,
+        priority: data.priority,
+        due_date: data.due_date,
+    })
+    if (task) {
+        showCreateModal.value = false
+    } else {
+        createError.value = 'Erro ao criar tarefa. Tente novamente.'
+    }
+}
+
 function onStart(event: DraggableEvent) {
     const oldIndex = event.oldIndex as number
     for (const [_key, list] of Object.entries(columnMap)) {
@@ -130,8 +156,19 @@ onMounted(() => {
         </div>
 
         <template v-else-if="project">
-            <h1 class="mb-2 text-2xl font-bold text-white">{{ project.name }}</h1>
-            <p v-if="project.description" class="mb-6 text-gray-400">{{ project.description }}</p>
+            <div class="mb-6 flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-white">{{ project.name }}</h1>
+                    <p v-if="project.description" class="mt-1 text-gray-400">{{ project.description }}</p>
+                </div>
+                <button @click="showCreateModal = true"
+                    class="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Nova Tarefa
+                </button>
+            </div>
 
             <div class="flex gap-4 overflow-x-auto pb-4">
                 <div v-for="column in columns" :key="column.key"
@@ -173,5 +210,11 @@ onMounted(() => {
                 </div>
             </div>
         </template>
+
+        <!-- Create task modal -->
+        <AppModal v-model="showCreateModal" title="Nova Tarefa">
+            <p v-if="createError" class="mb-3 text-sm text-red-400">{{ createError }}</p>
+            <TaskForm @submit="onCreateTask" @cancel="showCreateModal = false" />
+        </AppModal>
     </div>
 </template>
