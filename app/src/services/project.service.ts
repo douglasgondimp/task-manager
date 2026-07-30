@@ -21,7 +21,7 @@ export const projectService = {
     },
 
     async update(id: number, data: Partial<ProjectCreateData>): Promise<Project> {
-        const response = await http.put<{ data: Project }>(`/projects/${id}`, data)
+        const response = await http.patch<{ data: Project }>(`/projects/${id}`, data)
         return response.data.data
     },
 
