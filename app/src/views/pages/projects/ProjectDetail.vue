@@ -7,6 +7,7 @@ import { useProjects } from '@/composables/useProject'
 import AppModal from '@/components/AppModal.vue'
 import ProjectForm from '@/components/ProjectForm.vue'
 import TaskForm from '@/components/TaskForm.vue'
+import TaskCard from '@/components/TaskCard.vue'
 import type { Task } from '@/interfaces/task'
 
 const route = useRoute()
@@ -28,6 +29,7 @@ const {
     fetchTasks,
     updateTaskStatus,
     createTask,
+    updateTask,
 } = useTask()
 
 const loading = ref(true)
@@ -37,6 +39,9 @@ const showCreateModal = ref(false)
 const createError = ref<string | null>(null)
 const showEditModal = ref(false)
 const editError = ref<string | null>(null)
+const showTaskEditModal = ref(false)
+const taskEditError = ref<string | null>(null)
+const selectedTask = ref<Task | null>(null)
 
 // Inline editing state
 const editingTitle = ref(false)
@@ -156,6 +161,32 @@ async function onEditProject(data: { name: string; description?: string | null; 
     }
 }
 
+function onTaskClick(task: Task) {
+    selectedTask.value = task
+    showTaskEditModal.value = true
+}
+
+async function onUpdateTask(data: {
+    title: string
+    description?: string | null
+    priority: 'low' | 'medium' | 'high'
+    due_date?: string | null
+}) {
+    taskEditError.value = null
+    if (!selectedTask.value) return
+    const success = await updateTask(selectedTask.value.id, {
+        title: data.title,
+        description: data.description,
+        priority: data.priority,
+        due_date: data.due_date,
+    })
+    if (!success) {
+        taskEditError.value = 'Erro ao atualizar tarefa'
+    } else {
+        showTaskEditModal.value = false
+    }
+}
+
 function onStart(event: DraggableEvent) {
     const oldIndex = event.oldIndex as number
     for (const [_key, list] of Object.entries(columnMap)) {
@@ -240,27 +271,8 @@ onMounted(() => {
                     <VueDraggable v-model="columnMap[column.key]!.value" group="kanban-tasks" :animation="200"
                         ghost-class="opacity-40" class="flex min-h-[200px] flex-col gap-2 p-3"
                         @add="onTaskAdd(column.key, $event)" @start="onStart($event)">
-                        <div v-for="task in columnMap[column.key]!.value" :key="task.id" :data-task-id="task.id"
-                            class="cursor-grab rounded-lg border border-gray-600 bg-gray-800 p-3 shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing"
-                            :class="{ 'opacity-50': updatingTaskIds.has(task.id) }">
-                            <div class="flex items-start justify-between gap-2">
-                                <h4 class="text-sm font-medium text-white">{{ task.title }}</h4>
-                                <span class="shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-medium uppercase"
-                                    :class="priorityClass(task.priority.value)">
-                                    {{ task.priority.label }}
-                                </span>
-                            </div>
-
-                            <p v-if="task.description" class="mt-1 line-clamp-2 text-xs text-gray-500">
-                                {{ task.description }}
-                            </p>
-
-                            <div class="mt-2 flex items-center gap-3 text-[11px] text-gray-500">
-                                <div v-if="task.due_date" :class="{ 'text-red-400': task.is_overdue }">
-                                    {{ task.is_overdue ? '⚠ ' : '' }}{{ formatDate(task.due_date) }}
-                                </div>
-                            </div>
-                        </div>
+                        <TaskCard v-for="task in columnMap[column.key]!.value" :key="task.id" :task="task"
+                            :class="{ 'opacity-50': updatingTaskIds.has(task.id) }" @click="onTaskClick" />
                     </VueDraggable>
                 </div>
             </div>
@@ -280,6 +292,17 @@ onMounted(() => {
                 description: project.description,
                 status: project.status.value as 'active' | 'archived'
             }" :show-status="true" @submit="onEditProject" @cancel="showEditModal = false" />
+        </AppModal>
+
+        <!-- Edit task modal -->
+        <AppModal v-model="showTaskEditModal" title="Editar Tarefa">
+            <p v-if="taskEditError" class="mb-3 text-sm text-red-400">{{ taskEditError }}</p>
+            <TaskForm v-if="selectedTask" :initial-data="{
+                title: selectedTask.title,
+                description: selectedTask.description,
+                priority: selectedTask.priority.value,
+                due_date: selectedTask.due_date,
+            }" @submit="onUpdateTask" @cancel="showTaskEditModal = false" />
         </AppModal>
     </div>
 </template>
