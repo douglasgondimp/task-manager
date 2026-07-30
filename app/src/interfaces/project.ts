@@ -16,3 +16,8 @@ export interface ProjectCreateData {
     description?: string | null
     status?: string
 }
+
+export interface ProjectCreated {
+    message: string,
+    project: Project
+}
