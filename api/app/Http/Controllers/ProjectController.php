@@ -30,10 +30,11 @@ class ProjectController extends Controller
      */
     public function store(StoreRequest $request)
     {
-        Project::create($request->validated());
+        $project = Project::create($request->validated());
 
         return response()->json([
-            'message' => 'Projeto criado comm sucesso!'
+            'message' => 'Projeto criado comm sucesso!',
+            'project' => new ProjectResource($project)
         ], 201);
     }
 
