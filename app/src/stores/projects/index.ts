@@ -1,50 +1,46 @@
-import { defineStore } from 'pinia';
-import type { Project, ProjectCreateData } from '../../interfaces/project';
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
+import type { Project } from '@/interfaces/project'
 
-export const useProjectStore = defineStore('projects', {
-    state: () => ({
-        projects: [] as Project[],
-        loading: false,
-        error: null as string | null,
-    }),
-    actions: {
-        async fetchProjects() {
-            this.loading = true;
-            this.error = null;
-            try {
-                const response = await fetch('/projects');
+export const useProjectStore = defineStore('projects', () => {
+    const projects = ref<Project[]>([])
+    const selectedProject = ref<Project | null>(null)
 
-                if (!response.ok) {
-                    throw new Error('Erro ao carregar projetos');
-                }
+    const nextCursor = ref<string | null>(null)
+    const hasMore = ref(true)
 
-                const data = await response.json();
-                this.projects = data.data;
-            } catch (e) {
-                this.error = 'Erro ao carregar projetos';
-            } finally {
-                this.loading = false;
-            }
-        },
-        async createProject(data: ProjectCreateData) {
-            this.loading = true;
-            this.error = null;
-            try {
-                const response = await fetch('/projects', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data),
-                });
-                if (!response.ok) throw new Error('Erro ao criar projeto');
-                const project = await response.json();
-                this.projects.push(project.data);
-                return project;
-            } catch (e) {
-                this.error = 'Erro ao criar projeto';
-                throw e;
-            } finally {
-                this.loading = false;
-            }
-        },
-    },
-});
+    function setProjects(data: Project[]): void {
+        projects.value = data
+    }
+
+    function appendProjects(data: Project[]): void {
+        projects.value.push(...data)
+    }
+
+    function setSelectedProject(project: Project | null): void {
+        selectedProject.value = project
+    }
+
+    function setPagination(cursor: string | null): void {
+        nextCursor.value = cursor
+        hasMore.value = cursor !== null
+    }
+
+    function resetProjects(): void {
+        projects.value = []
+        nextCursor.value = null
+        hasMore.value = true
+    }
+
+    return {
+        projects,
+        selectedProject,
+        nextCursor,
+        hasMore,
+        setProjects,
+        appendProjects,
+        setSelectedProject,
+        setPagination,
+        resetProjects,
+    }
+})
