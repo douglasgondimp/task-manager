@@ -12,6 +12,7 @@ Route::middleware('throttle:60,1')->group(function () {
         ->group(function () {
             Route::get('/', 'index');
             Route::post('/', 'store');
+            Route::get('/{project}', 'show');
             Route::patch('/{project}', 'update');
         });
 
