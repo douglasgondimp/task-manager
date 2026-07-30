@@ -1,0 +1,167 @@
+<script setup lang="ts">
+import { ref, nextTick, onMounted, onUnmounted, watch } from 'vue'
+import { projectService } from '@/services/project.service'
+import type { Project } from '@/interfaces/project'
+
+const projects = ref<Project[]>([])
+const loading = ref(false)
+const loadingMore = ref(false)
+const error = ref<string | null>(null)
+const loadingMoreError = ref<string | null>(null)
+const nextCursor = ref<string | null>(null)
+const hasMore = ref(true)
+const perPage = ref(15)
+const sentinel = ref<HTMLElement | null>(null)
+let observer: IntersectionObserver | null = null
+
+function statusClass(status: string): string {
+    const map: Record<string, string> = {
+        active: 'bg-green-100 text-green-800',
+        archived: 'bg-red-100 text-red-800',
+    }
+    return map[status] || 'bg-blue-100 text-blue-800'
+}
+
+function formatDate(dateStr: string): string {
+    return new Date(dateStr).toLocaleDateString('pt-BR')
+}
+
+async function loadProjects() {
+    loading.value = true
+    error.value = null
+    loadingMoreError.value = null
+
+    try {
+        const response = await projectService.list(perPage.value)
+        projects.value = response.data
+        nextCursor.value = response.meta.next_cursor
+        hasMore.value = response.meta.next_cursor !== null
+    } catch (e) {
+        error.value = 'Erro ao carregar projetos'
+    } finally {
+        loading.value = false
+    }
+}
+
+async function loadMore() {
+    if (loading.value || loadingMore.value || !hasMore.value || !nextCursor.value) return
+
+    loadingMore.value = true
+    loadingMoreError.value = null
+
+    try {
+        const response = await projectService.list(perPage.value, nextCursor.value)
+        projects.value.push(...response.data)
+        nextCursor.value = response.meta.next_cursor
+        hasMore.value = response.meta.next_cursor !== null
+    } catch (e) {
+        loadingMoreError.value = 'Erro ao carregar mais projetos'
+    } finally {
+        loadingMore.value = false
+    }
+}
+
+function setupObserver() {
+    if (observer) observer.disconnect()
+
+    observer = new IntersectionObserver(
+        (entries) => {
+            if (entries[0]?.isIntersecting && hasMore.value && !loadingMore.value) {
+                void loadMore()
+            }
+        },
+        { rootMargin: '0px' },
+    )
+
+    if (sentinel.value) {
+        observer.observe(sentinel.value)
+    }
+}
+
+watch(perPage, async () => {
+    nextCursor.value = null
+    hasMore.value = true
+    await loadProjects()
+    await nextTick()
+    setupObserver()
+})
+
+onMounted(async () => {
+    await loadProjects()
+    await nextTick()
+    setupObserver()
+})
+
+onUnmounted(() => {
+    if (observer) observer.disconnect()
+})
+</script>
+
+<template>
+    <div class="projects-page">
+        <div class="mb-6 flex items-center justify-between">
+            <h1 class="text-2xl font-bold text-white">Projetos</h1>
+
+            <div class="flex items-center gap-2">
+                <label for="per-page" class="text-sm text-gray-400">Itens por página:</label>
+                <select id="per-page" v-model="perPage"
+                    class="rounded-lg border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none">
+                    <option :value="5">5</option>
+                    <option :value="10">10</option>
+                    <option :value="15">15</option>
+                    <option :value="20">20</option>
+                    <option :value="30">30</option>
+                    <option :value="50">50</option>
+                </select>
+            </div>
+        </div>
+
+        <div v-if="loading" class="flex items-center justify-center py-12">
+            <div class="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
+        </div>
+
+        <div v-else-if="error" class="rounded-lg bg-red-900/50 p-4 text-red-400">
+            {{ error }}
+        </div>
+
+        <div v-else-if="projects.length === 0" class="py-12 text-center text-gray-500">
+            Nenhum projeto encontrado.
+        </div>
+
+        <template v-else>
+            <div class="grid gap-4">
+                <div v-for="project in projects" :key="project.id"
+                    class="rounded-lg border border-gray-700 bg-gray-800 p-4 shadow-sm transition-shadow hover:shadow-md">
+                    <h2 class="text-lg font-semibold text-white">{{ project.name }}</h2>
+                    <p v-if="project.description" class="mt-1 text-gray-400">
+                        {{ project.description }}
+                    </p>
+                    <div class="mt-2 flex items-center gap-2">
+                        <span class="inline-block rounded-full px-2 py-0.5 text-xs font-medium"
+                            :class="statusClass(project.status.value)">
+                            {{ project.status.label }}
+                        </span>
+                        <span class="text-xs text-gray-500">
+                            {{ formatDate(project.created_at) }}
+                        </span>
+                        <span class="text-xs text-gray-500">
+                            · {{ project.tasks_count ?? 0 }} tarefas
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sentinel element for infinite scroll -->
+            <div ref="sentinel" class="mt-6 flex justify-center py-4">
+                <div v-if="loadingMore"
+                    class="h-6 w-6 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
+                <span v-else-if="loadingMoreError" class="text-sm text-red-400">
+                    {{ loadingMoreError }}
+                </span>
+                <span v-else-if="!hasMore" class="text-sm text-gray-500">
+                    Todos os projetos foram carregados.
+                </span>
+            </div>
+        </template>
+    </div>
+</template>
