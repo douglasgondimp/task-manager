@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { ref, nextTick, onMounted, onUnmounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { projectService } from '@/services/project.service'
 import type { Project } from '@/interfaces/project'
+
+const router = useRouter()
 
 const projects = ref<Project[]>([])
 const loading = ref(false)
@@ -130,8 +133,8 @@ onUnmounted(() => {
 
         <template v-else>
             <div class="grid gap-4">
-                <div v-for="project in projects" :key="project.id"
-                    class="rounded-lg border border-gray-700 bg-gray-800 p-4 shadow-sm transition-shadow hover:shadow-md">
+                <div v-for="project in projects" :key="project.id" @click="router.push(`/projects/${project.id}`)"
+                    class="cursor-pointer rounded-lg border border-gray-700 bg-gray-800 p-4 shadow-sm transition-shadow hover:border-blue-500 hover:shadow-md">
                     <h2 class="text-lg font-semibold text-white">{{ project.name }}</h2>
                     <p v-if="project.description" class="mt-1 text-gray-400">
                         {{ project.description }}
