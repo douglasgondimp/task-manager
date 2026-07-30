@@ -1,18 +1,11 @@
 import http from './http'
 import type { Project, ProjectCreateData } from '../interfaces/project'
-
-export interface PaginatedResponse<T> {
-    data: T[]
-    current_page: number
-    last_page: number
-    per_page: number
-    total: number
-}
+import type { CursorPaginatedResponse } from '@/interfaces/paginate'
 
 export const projectService = {
-    async list(page = 1, perPage = 15): Promise<PaginatedResponse<Project>> {
-        const response = await http.get<PaginatedResponse<Project>>('/projects', {
-            params: { page, per_page: perPage },
+    async list(perPage = 15, cursor?: string | null): Promise<CursorPaginatedResponse<Project>> {
+        const response = await http.get<CursorPaginatedResponse<Project>>('/projects', {
+            params: { per_page: perPage, cursor },
         })
         return response.data
     },
