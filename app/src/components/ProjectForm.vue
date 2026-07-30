@@ -5,16 +5,19 @@ const props = defineProps<{
     initialData?: {
         name: string
         description?: string | null
+        status?: 'active' | 'archived'
     }
+    showStatus?: boolean
 }>()
 
 const emit = defineEmits<{
-    submit: [data: { name: string; description?: string | null }]
+    submit: [data: { name: string; description?: string | null; status?: 'active' | 'archived' }]
     cancel: []
 }>()
 
 const name = ref(props.initialData?.name ?? '')
 const description = ref(props.initialData?.description ?? '')
+const status = ref<'active' | 'archived'>(props.initialData?.status ?? 'active')
 const submitted = ref(false)
 
 const nameError = ref<string | null>(null)
@@ -40,10 +43,16 @@ function onSubmit() {
 
     if (!validate()) return
 
-    emit('submit', {
+    const data: { name: string; description?: string | null; status?: 'active' | 'archived' } = {
         name: name.value.trim(),
         description: description.value.trim() || null,
-    })
+    }
+
+    if (props.showStatus) {
+        data.status = status.value
+    }
+
+    emit('submit', data)
 }
 
 function onCancel() {
@@ -73,6 +82,18 @@ function onCancel() {
             <textarea id="project-description" v-model="description" rows="3"
                 placeholder="Descrição do projeto (opcional)"
                 class="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 transition-colors focus:border-blue-500 focus:outline-none"></textarea>
+        </div>
+
+        <!-- Status field (optional) -->
+        <div v-if="showStatus">
+            <label for="project-status" class="mb-1 block text-sm font-medium text-gray-300">
+                Status
+            </label>
+            <select id="project-status" v-model="status"
+                class="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none">
+                <option value="active">Ativo</option>
+                <option value="archived">Arquivado</option>
+            </select>
         </div>
 
         <!-- Actions -->
