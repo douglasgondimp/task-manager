@@ -1,5 +1,5 @@
 import http from './http'
-import type { Project, ProjectCreateData } from '../interfaces/project'
+import type { Project, ProjectCreated, ProjectCreateData } from '../interfaces/project'
 import type { CursorPaginatedResponse } from '@/interfaces/paginate'
 
 export const projectService = {
@@ -15,9 +15,9 @@ export const projectService = {
         return response.data.data
     },
 
-    async create(data: ProjectCreateData): Promise<Project> {
-        const response = await http.post<{ data: Project }>('/projects', data)
-        return response.data.data
+    async create(data: ProjectCreateData): Promise<ProjectCreated> {
+        const response = await http.post<ProjectCreated>('/projects', data)
+        return response.data
     },
 
     async update(id: number, data: Partial<ProjectCreateData>): Promise<Project> {
