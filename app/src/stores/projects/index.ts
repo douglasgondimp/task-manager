@@ -25,6 +25,12 @@ export const useProjectStore = defineStore('projects', () => {
         selectedProject.value = project
     }
 
+    function updateSelectedProject(data: Partial<Project>): void {
+        if (selectedProject.value) {
+            selectedProject.value = { ...selectedProject.value, ...data }
+        }
+    }
+
     function setPagination(cursor: string | null): void {
         nextCursor.value = cursor
         hasMore.value = cursor !== null
@@ -45,6 +51,7 @@ export const useProjectStore = defineStore('projects', () => {
         addProject,
         appendProjects,
         setSelectedProject,
+        updateSelectedProject,
         setPagination,
         resetProjects,
     }
