@@ -5,6 +5,7 @@ import { VueDraggable, type DraggableEvent } from 'vue-draggable-plus'
 import { useTask } from '@/composables/useTask'
 import { useProjects } from '@/composables/useProject'
 import AppModal from '@/components/AppModal.vue'
+import ProjectForm from '@/components/ProjectForm.vue'
 import TaskForm from '@/components/TaskForm.vue'
 import type { Task } from '@/interfaces/task'
 
@@ -16,6 +17,7 @@ const {
     loading: loadingProject,
     error: projectError,
     fetchProject,
+    updateProject,
 } = useProjects()
 
 const {
@@ -33,6 +35,15 @@ const error = ref<string | null>(null)
 let draggedTaskId: number | null = null
 const showCreateModal = ref(false)
 const createError = ref<string | null>(null)
+const showEditModal = ref(false)
+const editError = ref<string | null>(null)
+
+// Inline editing state
+const editingTitle = ref(false)
+const editingDescription = ref(false)
+const editTitle = ref('')
+const editDescription = ref('')
+const updateError = ref<string | null>(null)
 
 const columns = [
     { key: 'todo', label: 'A fazer' },
@@ -125,6 +136,26 @@ async function onCreateTask(data: {
     }
 }
 
+function getStatusColor(status: string): string {
+    return status === 'active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+}
+
+function getStatusLabel(status: string): string {
+    return status === 'active' ? 'Ativo' : 'Arquivado'
+}
+
+// Edit modal
+async function onEditProject(data: { name: string; description?: string | null; status?: 'active' | 'archived' }) {
+    editError.value = null
+    if (!project.value) return
+    const success = await updateProject(project.value.id, data)
+    if (!success) {
+        editError.value = 'Erro ao atualizar projeto'
+    } else {
+        showEditModal.value = false
+    }
+}
+
 function onStart(event: DraggableEvent) {
     const oldIndex = event.oldIndex as number
     for (const [_key, list] of Object.entries(columnMap)) {
@@ -158,16 +189,40 @@ onMounted(() => {
         <template v-else-if="project">
             <div class="mb-6 flex items-center justify-between">
                 <div>
+                    <div class="mt-2 flex items-center gap-2">
+                        <button
+                            class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors hover:opacity-80"
+                            :class="getStatusColor(project.status.value)"
+                            :title="project.status.value === 'active' ? 'Clique para arquivar' : 'Clique para ativar'">
+                            {{ getStatusLabel(project.status.value) }}
+                        </button>
+                    </div>
+
                     <h1 class="text-2xl font-bold text-white">{{ project.name }}</h1>
                     <p v-if="project.description" class="mt-1 text-gray-400">{{ project.description }}</p>
                 </div>
-                <button @click="showCreateModal = true"
-                    class="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700">
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                    </svg>
-                    Nova Tarefa
-                </button>
+                <div class="flex gap-2">
+                    <button @click="showEditModal = true"
+                        class="inline-flex items-center gap-1.5 rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-700">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Editar Projeto
+                    </button>
+                    <button @click="showCreateModal = true"
+                        class="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Nova Tarefa
+                    </button>
+                </div>
+            </div>
+
+            <!-- Update error -->
+            <div v-if="updateError" class="mb-4 rounded-lg bg-red-900/50 p-3 text-sm text-red-400">
+                {{ updateError }}
             </div>
 
             <div class="flex gap-4 overflow-x-auto pb-4">
@@ -215,6 +270,16 @@ onMounted(() => {
         <AppModal v-model="showCreateModal" title="Nova Tarefa">
             <p v-if="createError" class="mb-3 text-sm text-red-400">{{ createError }}</p>
             <TaskForm @submit="onCreateTask" @cancel="showCreateModal = false" />
+        </AppModal>
+
+        <!-- Edit project modal -->
+        <AppModal v-model="showEditModal" title="Editar Projeto">
+            <p v-if="editError" class="mb-3 text-sm text-red-400">{{ editError }}</p>
+            <ProjectForm v-if="project" :initial-data="{
+                name: project.name,
+                description: project.description,
+                status: project.status.value as 'active' | 'archived'
+            }" :show-status="true" @submit="onEditProject" @cancel="showEditModal = false" />
         </AppModal>
     </div>
 </template>
