@@ -175,6 +175,42 @@ class ProjectTaskControllerTest extends TestCase
     }
 
     /**
+     * Test that the created_at filter is only applied when the array is sent.
+     */
+    public function test_created_at_filter_only_applied_when_array_is_sent(): void
+    {
+        $project = Project::factory()->create();
+
+        $oldTask = Task::factory()->for($project)->create([
+            'created_at' => now()->subMonth(),
+        ]);
+        $recentTask = Task::factory()->for($project)->create([
+            'created_at' => now(),
+        ]);
+
+        // Without created_at filter: all tasks should be returned
+        $response = $this->getJson("/api/projects/{$project->id}/tasks");
+
+        $response->assertStatus(200)
+            ->assertJsonCount(2, 'data');
+
+        // With created_at filter: only tasks within the date range should be returned
+        $startDate = now();
+
+        $response = $this->getJson("/api/projects/{$project->id}/tasks?created_at[]={$startDate}");
+
+        $response->assertStatus(200)
+            ->assertJsonCount(1, 'data')
+            ->assertJson([
+                'data' => [
+                    0 => [
+                        'id' => $recentTask->id,
+                    ],
+                ],
+            ]);
+    }
+
+    /**
      * Test combining multiple filters.
      */
     public function test_can_combine_multiple_filters(): void

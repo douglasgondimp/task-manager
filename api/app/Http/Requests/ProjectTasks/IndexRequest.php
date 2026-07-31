@@ -18,6 +18,29 @@ class IndexRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation()
+    {
+        $createdAt = $this->input('created_at');
+
+        if (!is_array($createdAt))
+            return;
+
+        $startDate = $createdAt[0] ?? null;
+        $endDate   = $createdAt[1] ?? null;
+
+        if ($startDate && !$endDate) {
+            $endDate = $startDate;
+        }
+
+        if (! $startDate && $endDate) {
+            $startDate = $endDate;
+        }
+
+        $this->merge([
+            'created_at' => [$startDate, $endDate],
+        ]);
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *
