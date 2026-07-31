@@ -5,6 +5,7 @@ import { useTaskStore } from '@/stores/tasks'
 import type {
     Task,
     TaskCreateData,
+    TaskListParams,
     TaskStatus,
     TaskUpdateData,
 } from '@/interfaces/task'
@@ -30,11 +31,12 @@ export function useTask() {
     async function fetchTaskColumn(
         projectId: number,
         status: TaskStatus,
+        filters?: TaskListParams,
     ): Promise<void> {
         errors[status] = null
 
         try {
-            const response = await taskService.listByProject(projectId, status)
+            const response = await taskService.listByProject(projectId, undefined, { ...filters, status })
 
             taskStore.setTasks(status, response.data)
             taskStore.setPagination(status, response.meta.next_cursor)
@@ -43,14 +45,14 @@ export function useTask() {
         }
     }
 
-    async function fetchTasks(projectId: number): Promise<void> {
+    async function fetchTasks(projectId: number, filters?: TaskListParams): Promise<void> {
         loading.value = true
         taskStore.resetTasks()
 
         try {
             await Promise.all(
                 taskStatuses.map((status) =>
-                    fetchTaskColumn(projectId, status),
+                    fetchTaskColumn(projectId, status, filters),
                 ),
             )
         } finally {
@@ -78,8 +80,8 @@ export function useTask() {
         try {
             const response = await taskService.listByProject(
                 projectId,
-                status,
                 currentPagination.nextCursor,
+                { status },
             )
 
             taskStore.appendTasks(status, response.data)
