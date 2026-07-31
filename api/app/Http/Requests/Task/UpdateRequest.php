@@ -31,7 +31,7 @@ class UpdateRequest extends FormRequest
             'description' => ['sometimes', 'nullable', 'string'],
             'status'      => ['sometimes', Rule::enum(TaskStatus::class)],
             'priority'    => ['sometimes', Rule::enum(TaskPriority::class)],
-            'due_date'    => ['sometimes', 'date'],
+            'due_date'    => ['sometimes', 'nullable', 'date'],
         ];
     }
 

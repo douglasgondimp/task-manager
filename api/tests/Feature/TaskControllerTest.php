@@ -67,6 +67,7 @@ class TaskControllerTest extends TestCase
             'description' => 'Descrição original',
             'status' => 'todo',
             'priority' => 'medium',
+            'due_date' => "2026-06-05"
         ]);
 
         $updateData = [
@@ -74,6 +75,7 @@ class TaskControllerTest extends TestCase
             'description' => 'Nova descrição',
             'status' => 'in_progress',
             'priority' => 'high',
+            'due_date' => null
         ];
 
         $response = $this->patchJson("/api/tasks/{$task->id}", $updateData);
