@@ -48,7 +48,7 @@ export const TASK_COLUMNS = [
 
 export interface TaskListParams {
     search?: string | null
-    status: TaskStatus
+    status?: TaskStatus
     priority?: TaskPriority | null
     is_overdue?: boolean
     created_at?: [string, string] | [] | null
