@@ -25,6 +25,7 @@ const perPage = ref(15)
 const sentinel = ref<HTMLElement | null>(null)
 const showCreateModal = ref(false)
 const createError = ref<string | null>(null)
+const creatingProject = ref(false)
 
 // Filter state
 const showFilters = ref(false)
@@ -35,11 +36,20 @@ let observer: IntersectionObserver | null = null
 
 async function onCreateProject(data: { name: string; description?: string | null }) {
     createError.value = null
-    const success = await createProject(data)
-    if (success) {
-        showCreateModal.value = false
-    } else {
+    creatingProject.value = true
+
+    try {
+        const success = await createProject(data)
+        if (success) {
+            showCreateModal.value = false
+            return
+        }
+
         createError.value = 'Erro ao criar projeto. Tente novamente.'
+    } catch {
+        createError.value = 'Erro ao criar projeto. Tente novamente.'
+    } finally {
+        creatingProject.value = false
     }
 }
 
@@ -198,7 +208,7 @@ onUnmounted(() => {
             <div class="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
         </div>
 
-        <div v-else-if="error" class="rounded-lg bg-red-900/50 p-4 text-red-400">
+        <div v-else-if="error" class="rounded-lg bg-red-900/50 p-4 text-red-400 mb-5">
             {{ error }}
         </div>
 
@@ -206,7 +216,7 @@ onUnmounted(() => {
             Nenhum projeto encontrado.
         </div>
 
-        <template v-else>
+        <template v-if="projects.length">
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                 <div v-for="project in projects" :key="project.id" @click="router.push(`/projects/${project.id}`)"
                     class="cursor-pointer rounded-lg border border-gray-700 bg-gray-800 p-4 shadow-sm transition-shadow hover:border-blue-500 hover:shadow-md">
@@ -245,7 +255,7 @@ onUnmounted(() => {
         <!-- Create project modal -->
         <AppModal v-model="showCreateModal" title="Novo Projeto">
             <p v-if="createError" class="mb-3 text-sm text-red-400">{{ createError }}</p>
-            <ProjectForm @submit="onCreateProject" @cancel="showCreateModal = false" />
+            <ProjectForm :submitting="creatingProject" @submit="onCreateProject" @cancel="showCreateModal = false" />
         </AppModal>
     </div>
 </template>

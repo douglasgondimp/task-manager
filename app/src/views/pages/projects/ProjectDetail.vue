@@ -52,6 +52,9 @@ const updateError = ref<string | null>(null)
 const showDeleteModal = ref(false)
 const taskToDelete = ref<Task | null>(null)
 const deleteError = ref<string | null>(null)
+const creatingTask = ref(false)
+const updatingTask = ref(false)
+const updatingProject = ref(false)
 
 // Filter state
 const showFilters = ref(false)
@@ -121,17 +124,25 @@ async function onCreateTask(data: {
     due_date?: string | null
 }) {
     createError.value = null
-    const projectId = Number(route.params.id)
-    const task = await createTask(projectId, {
-        title: data.title,
-        description: data.description,
-        priority: data.priority,
-        due_date: data.due_date,
-    })
-    if (task) {
-        showCreateModal.value = false
-    } else {
+    creatingTask.value = true
+
+    try {
+        const projectId = Number(route.params.id)
+        const task = await createTask(projectId, {
+            title: data.title,
+            description: data.description,
+            priority: data.priority,
+            due_date: data.due_date,
+        })
+        if (task) {
+            showCreateModal.value = false
+        } else {
+            createError.value = 'Erro ao criar tarefa. Tente novamente.'
+        }
+    } catch {
         createError.value = 'Erro ao criar tarefa. Tente novamente.'
+    } finally {
+        creatingTask.value = false
     }
 }
 
@@ -146,12 +157,23 @@ function getStatusLabel(status: string): string {
 // Edit modal
 async function onEditProject(data: { name: string; description?: string | null; status?: 'active' | 'archived' }) {
     editError.value = null
+
     if (!project.value) return
-    const success = await updateProject(project.value.id, data)
-    if (!success) {
+
+    updatingProject.value = true
+
+    try {
+        const success = await updateProject(project.value.id, data)
+        if (success) {
+            showEditModal.value = false
+            return
+        }
+
         editError.value = 'Erro ao atualizar projeto'
-    } else {
-        showEditModal.value = false
+    } catch {
+        editError.value = 'Erro ao atualizar projeto'
+    } finally {
+        updatingProject.value = false
     }
 }
 
@@ -193,17 +215,29 @@ async function onUpdateTask(data: {
     due_date?: string | null
 }) {
     taskEditError.value = null
+
     if (!selectedTask.value) return
-    const success = await updateTask(selectedTask.value.id, {
-        title: data.title,
-        description: data.description,
-        priority: data.priority,
-        due_date: data.due_date,
-    })
-    if (!success) {
+
+    updatingTask.value = true
+
+    try {
+        const success = await updateTask(selectedTask.value.id, {
+            title: data.title,
+            description: data.description,
+            priority: data.priority,
+            due_date: data.due_date,
+        })
+
+        if (success) {
+            showTaskEditModal.value = false
+            return
+        }
+
         taskEditError.value = 'Erro ao atualizar tarefa'
-    } else {
-        showTaskEditModal.value = false
+    } catch {
+        taskEditError.value = 'Erro ao atualizar tarefa'
+    } finally {
+        updatingTask.value = false
     }
 }
 
@@ -286,11 +320,11 @@ onBeforeUnmount(() => {
             <div class="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
         </div>
 
-        <div v-else-if="error" class="rounded-lg bg-red-900/50 p-4 text-red-400">
+        <div v-else-if="error" class="rounded-lg bg-red-900/50 p-4 text-red-400 mb-5">
             {{ error }}
         </div>
 
-        <template v-else-if="project">
+        <template v-if="project">
             <div class="mb-6">
                 <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                     <div class="flex-1">
@@ -445,7 +479,7 @@ onBeforeUnmount(() => {
         <!-- Create task modal -->
         <AppModal v-model="showCreateModal" title="Nova Tarefa">
             <p v-if="createError" class="mb-3 text-sm text-red-400">{{ createError }}</p>
-            <TaskForm @submit="onCreateTask" @cancel="showCreateModal = false" />
+            <TaskForm :submiting="creatingTask" @submit="onCreateTask" @cancel="showCreateModal = false" />
         </AppModal>
 
         <!-- Edit project modal -->
@@ -455,7 +489,8 @@ onBeforeUnmount(() => {
                 name: project.name,
                 description: project.description,
                 status: project.status.value as 'active' | 'archived'
-            }" :show-status="true" @submit="onEditProject" @cancel="showEditModal = false" />
+            }" :submitting="updatingProject" :show-status="true" @submit="onEditProject"
+                @cancel="showEditModal = false" />
         </AppModal>
 
         <!-- Edit task modal -->
@@ -466,7 +501,7 @@ onBeforeUnmount(() => {
                 description: selectedTask.description,
                 priority: selectedTask.priority.value,
                 due_date: selectedTask.due_date,
-            }" @submit="onUpdateTask" @cancel="showTaskEditModal = false" />
+            }" :submitting="updatingTask" @submit="onUpdateTask" @cancel="showTaskEditModal = false" />
         </AppModal>
 
         <!-- Delete task confirmation modal -->
@@ -474,7 +509,7 @@ onBeforeUnmount(() => {
             <div class="space-y-4">
                 <p class="text-sm text-gray-300">
                     Tem certeza que deseja excluir a tarefa <strong class="text-white">{{ taskToDelete?.title
-                        }}</strong>?
+                    }}</strong>?
                 </p>
                 <p v-if="deleteError" class="text-sm text-red-400">{{ deleteError }}</p>
                 <div class="flex justify-end gap-3">

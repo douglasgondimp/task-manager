@@ -1,14 +1,20 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-const props = defineProps<{
-    initialData?: {
-        title: string
-        description?: string | null
-        priority?: 'low' | 'medium' | 'high'
-        due_date?: string | null
-    }
-}>()
+const props = withDefaults(
+    defineProps<{
+        initialData?: {
+            title: string
+            description?: string | null
+            priority?: 'low' | 'medium' | 'high'
+            due_date?: string | null
+        },
+        submitting?: boolean
+    }>(),
+    {
+        submitting: false,
+    },
+)
 
 const emit = defineEmits<{
     submit: [data: {
@@ -24,7 +30,6 @@ const title = ref(props.initialData?.title ?? '')
 const description = ref(props.initialData?.description ?? '')
 const priority = ref<'low' | 'medium' | 'high'>(props.initialData?.priority ?? 'medium')
 const dueDate = ref(props.initialData?.due_date ?? '')
-const submitted = ref(false)
 
 const titleError = ref<string | null>(null)
 
@@ -46,8 +51,6 @@ function validate(): boolean {
 }
 
 function onSubmit() {
-    submitted.value = true
-
     if (!validate()) return
 
     emit('submit', {
@@ -116,9 +119,9 @@ function onCancel() {
                 class="rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-800">
                 Cancelar
             </button>
-            <button type="submit" :disabled="submitted"
+            <button type="submit" :disabled="submitting"
                 class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50">
-                {{ submitted ? 'Salvando...' : 'Salvar' }}
+                {{ submitting ? 'Salvando...' : 'Salvar' }}
             </button>
         </div>
     </form>
