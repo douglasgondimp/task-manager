@@ -52,12 +52,12 @@ const creatingTask = ref(false)
 const updatingTask = ref(false)
 const updatingProject = ref(false)
 
-const apiAlert = useAlert()
+const alert = useAlert()
 
 // Watch composable errors and show as alerts
 watch(error, (newError) => {
     if (newError) {
-        apiAlert.showAlert('error', newError)
+        alert.showAlert('error', newError)
     }
 })
 
@@ -105,12 +105,12 @@ async function onTaskAdd(
     const updatedTask = await updateTaskStatus(task.id, columnStatus)
 
     if (updatedTask) {
-        apiAlert.showAlert('success', 'Tarefa atualizada com sucesso.')
+        alert.showAlert('success', 'Tarefa atualizada com sucesso.')
         return
     }
 
     await fetchTasks(Number(route.params.id))
-    apiAlert.showAlert('error', 'Ocorreu um erro ao atualizar a tarefa')
+    alert.showAlert('error', 'Ocorreu um erro ao atualizar a tarefa')
 
 }
 
@@ -145,12 +145,12 @@ async function onCreateTask(data: {
         })
         if (task) {
             showCreateModal.value = false
-            apiAlert.showAlert('success', 'Tarefa criada com sucesso.')
+            alert.showAlert('success', 'Tarefa criada com sucesso.')
         } else {
-            apiAlert.showAlert('error', 'Erro ao criar tarefa. Tente novamente.')
+            alert.showAlert('error', 'Erro ao criar tarefa. Tente novamente.')
         }
     } catch {
-        apiAlert.showAlert('error', 'Erro ao criar tarefa. Tente novamente.')
+        alert.showAlert('error', 'Erro ao criar tarefa. Tente novamente.')
     } finally {
         creatingTask.value = false
     }
@@ -174,13 +174,13 @@ async function onEditProject(data: { name: string; description?: string | null; 
         const success = await updateProject(project.value.id, data)
         if (success) {
             showEditModal.value = false
-            apiAlert.showAlert('success', 'Projeto atualizado com sucesso.')
+            alert.showAlert('success', 'Projeto atualizado com sucesso.')
             return
         }
 
-        apiAlert.showAlert('error', 'Erro ao atualizar projeto')
+        alert.showAlert('error', 'Erro ao atualizar projeto')
     } catch {
-        apiAlert.showAlert('error', 'Erro ao atualizar projeto')
+        alert.showAlert('error', 'Erro ao atualizar projeto')
     } finally {
         updatingProject.value = false
     }
@@ -204,9 +204,9 @@ async function confirmDeleteTask() {
     if (success) {
         showDeleteModal.value = false
         taskToDelete.value = null
-        apiAlert.showAlert('success', 'Tarefa excluída com sucesso.')
+        alert.showAlert('success', 'Tarefa excluída com sucesso.')
     } else {
-        apiAlert.showAlert('error', 'Erro ao excluir tarefa')
+        alert.showAlert('error', 'Erro ao excluir tarefa')
     }
 }
 
@@ -235,13 +235,13 @@ async function onUpdateTask(data: {
 
         if (success) {
             showTaskEditModal.value = false
-            apiAlert.showAlert('success', 'Tarefa atualizada com sucesso.')
+            alert.showAlert('success', 'Tarefa atualizada com sucesso.')
             return
         }
 
-        apiAlert.showAlert('error', 'Erro ao atualizar tarefa')
+        alert.showAlert('error', 'Erro ao atualizar tarefa')
     } catch {
-        apiAlert.showAlert('error', 'Erro ao atualizar tarefa')
+        alert.showAlert('error', 'Erro ao atualizar tarefa')
     } finally {
         updatingTask.value = false
     }
@@ -503,7 +503,7 @@ onBeforeUnmount(() => {
             <div class="space-y-4">
                 <p class="text-sm text-gray-300">
                     Tem certeza que deseja excluir a tarefa <strong class="text-white">{{ taskToDelete?.title
-                        }}</strong>?
+                    }}</strong>?
                 </p>
                 <div class="flex justify-end gap-3">
                     <button @click="cancelDeleteTask"

@@ -6,8 +6,8 @@ import Alert from '@/components/Alert.vue'
 
 const sidebarOpen = ref(false)
 
-const AlertProvider = useAlertProvider()
-provide(AlertKey, AlertProvider)
+const alertProvider = useAlertProvider()
+provide(AlertKey, alertProvider)
 </script>
 
 <template>
@@ -52,8 +52,7 @@ provide(AlertKey, AlertProvider)
             </div>
         </main>
 
-        <!-- API Alert overlay (global) -->
-        <Alert v-model="AlertProvider.show.value" :type="AlertProvider.type.value"
-            :message="AlertProvider.message.value" />
+        <Alert v-model="alertProvider.show.value" :type="alertProvider.type.value"
+            :message="alertProvider.message.value" />
     </div>
 </template>

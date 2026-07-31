@@ -10,14 +10,14 @@ export interface AlertState {
     hideAlert: () => void
 }
 
-const AlertKey = Symbol('apiAlert')
+const AlertKey = Symbol('alert')
 
 export function useAlert(): AlertState {
     const state = inject<AlertState>(AlertKey)
 
     if (!state) {
         throw new Error(
-            'useApiAlert must be used within a component that has the ApiAlertProvider',
+            'useAlert must be used within a component that has the AlertProvider',
         )
     }
 

@@ -27,7 +27,7 @@ const sentinel = ref<HTMLElement | null>(null)
 const showCreateModal = ref(false)
 const creatingProject = ref(false)
 
-const apiAlert = useAlert()
+const alert = useAlert()
 
 // Filter state
 const showFilters = ref(false)
@@ -41,13 +41,13 @@ let debounceTimer: ReturnType<typeof setTimeout>
 // Watch composable errors and show as alerts
 watch(error, (newError) => {
     if (newError) {
-        apiAlert.showAlert('error', newError)
+        alert.showAlert('error', newError)
     }
 })
 
 watch(loadingMoreError, (newError) => {
     if (newError) {
-        apiAlert.showAlert('error', newError)
+        alert.showAlert('error', newError)
     }
 })
 
@@ -58,13 +58,13 @@ async function onCreateProject(data: { name: string; description?: string | null
         const success = await createProject(data)
         if (success) {
             showCreateModal.value = false
-            apiAlert.showAlert('success', 'Projeto criado com sucesso.')
+            alert.showAlert('success', 'Projeto criado com sucesso.')
             return
         }
 
-        apiAlert.showAlert('error', 'Erro ao criar projeto. Tente novamente.')
+        alert.showAlert('error', 'Erro ao criar projeto. Tente novamente.')
     } catch {
-        apiAlert.showAlert('error', 'Erro ao criar projeto. Tente novamente.')
+        alert.showAlert('error', 'Erro ao criar projeto. Tente novamente.')
     } finally {
         creatingProject.value = false
     }
