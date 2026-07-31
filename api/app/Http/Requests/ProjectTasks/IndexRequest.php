@@ -39,6 +39,12 @@ class IndexRequest extends FormRequest
         $this->merge([
             'created_at' => [$startDate, $endDate],
         ]);
+
+        if ($this->has('is_overdue')) {
+            $this->merge([
+                'is_overdue' => $this->boolean('is_overdue')
+            ]);
+        }
     }
 
     /**
