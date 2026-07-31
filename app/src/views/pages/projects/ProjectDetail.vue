@@ -380,9 +380,6 @@ onMounted(() => {
                     <div class="border-b border-gray-700 px-4 py-3">
                         <div class="flex items-center justify-between">
                             <h3 class="font-semibold text-white">{{ column.label }}</h3>
-                            <span class="rounded-full bg-gray-700 px-2 py-0.5 text-xs text-gray-400">
-                                {{ tasksByStatus[column.key].length }}
-                            </span>
                         </div>
                     </div>
 
@@ -446,7 +443,7 @@ onMounted(() => {
             <div class="space-y-4">
                 <p class="text-sm text-gray-300">
                     Tem certeza que deseja excluir a tarefa <strong class="text-white">{{ taskToDelete?.title
-                        }}</strong>?
+                    }}</strong>?
                 </p>
                 <p v-if="deleteError" class="text-sm text-red-400">{{ deleteError }}</p>
                 <div class="flex justify-end gap-3">
