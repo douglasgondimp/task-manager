@@ -5,12 +5,12 @@ import type { CursorPaginatedResponse } from '@/interfaces/paginate'
 export const taskService = {
     async listByProject(
         projectId: number,
-        status: TaskStatus,
         cursor?: string | null,
+        filters?: TaskListParams,
     ): Promise<CursorPaginatedResponse<Task>> {
         const response = await http.get<CursorPaginatedResponse<Task>>(
             `/projects/${projectId}/tasks`,
-            { params: { status, cursor: cursor || undefined } },
+            { params: { cursor: cursor || undefined, ...filters } },
         )
         return response.data
     },
