@@ -8,7 +8,7 @@ import AppModal from '@/components/AppModal.vue'
 import ProjectForm from '@/components/ProjectForm.vue'
 import TaskForm from '@/components/TaskForm.vue'
 import TaskCard from '@/components/TaskCard.vue'
-import type { Task, TaskStatus } from '@/interfaces/task'
+import type { Task, TaskStatus, TaskListParams } from '@/interfaces/task'
 
 const route = useRoute()
 const router = useRouter()
@@ -45,6 +45,15 @@ const showTaskEditModal = ref(false)
 const taskEditError = ref<string | null>(null)
 const selectedTask = ref<Task | null>(null)
 const updateError = ref<string | null>(null)
+
+// Filter state
+const showFilters = ref(false)
+const filterSearch = ref('')
+const filterStatus = ref<'todo' | 'in_progress' | 'done' | ''>('')
+const filterPriority = ref<'low' | 'medium' | 'high' | ''>('')
+const filterOverdue = ref(false)
+const filterDateFrom = ref('')
+const filterDateTo = ref('')
 
 const columns = [
     { key: 'todo', label: 'A fazer' },
@@ -179,6 +188,33 @@ async function onUpdateTask(data: {
     }
 }
 
+// Filters
+function applyFilters() {
+    const filters: TaskListParams = {
+        search: filterSearch.value || undefined,
+        status: (filterStatus.value || undefined) as TaskListParams['status'],
+        priority: filterPriority.value || undefined,
+        is_overdue: filterOverdue.value || undefined,
+        created_at: (filterDateFrom.value && filterDateTo.value) ? [filterDateFrom.value, filterDateTo.value] : undefined,
+    }
+    loadProjectTasks(filters)
+}
+
+function resetFilters() {
+    filterSearch.value = ''
+    filterStatus.value = ''
+    filterPriority.value = ''
+    filterOverdue.value = false
+    filterDateFrom.value = ''
+    filterDateTo.value = ''
+    loadProjectTasks()
+}
+
+async function loadProjectTasks(filters?: TaskListParams) {
+    if (!project.value) return
+    await fetchTasks(project.value.id, filters)
+}
+
 onMounted(() => {
     void loadProject()
 })
@@ -214,7 +250,8 @@ onMounted(() => {
                     <h1 class="text-2xl font-bold text-white">{{ project.name }}</h1>
                     <p v-if="project.description" class="mt-1 text-gray-400">{{ project.description }}</p>
                 </div>
-                <div class="text-right">
+                <div class="flex flex-col text-right">
+
                     <button @click="showEditModal = true"
                         class="inline-flex items-center gap-1.5 mb-3 rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-700">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -223,13 +260,24 @@ onMounted(() => {
                         </svg>
                         Editar Projeto
                     </button>
+
                     <button @click="showCreateModal = true"
-                        class="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700">
+                        class="inline-flex items-center mb-3 gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                         </svg>
                         Nova Tarefa
                     </button>
+
+                    <button @click="showFilters = !showFilters"
+                        class="inline-flex items-center gap-1.5 mb-3 rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-700">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                        </svg>
+                        Filtros
+                    </button>
+
                 </div>
             </div>
 
@@ -238,15 +286,71 @@ onMounted(() => {
                 {{ updateError }}
             </div>
 
+            <!-- Filters panel -->
+            <div v-if="showFilters" class="mb-6 rounded-lg border border-gray-700 bg-gray-800/50 p-4">
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    <div>
+                        <label for="filter-search" class="mb-1 block text-sm font-medium text-gray-300">Buscar</label>
+                        <input id="filter-search" v-model="filterSearch" type="text" placeholder="Buscar tarefa..."
+                            class="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none" />
+                    </div>
+                    <div>
+                        <label for="filter-status" class="mb-1 block text-sm font-medium text-gray-300">Status</label>
+                        <select id="filter-status" v-model="filterStatus"
+                            class="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none">
+                            <option value="">Todos</option>
+                            <option value="todo">A fazer</option>
+                            <option value="in_progress">Em desenvolvimento</option>
+                            <option value="done">Completo</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filter-priority"
+                            class="mb-1 block text-sm font-medium text-gray-300">Prioridade</label>
+                        <select id="filter-priority" v-model="filterPriority"
+                            class="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none">
+                            <option value="">Todas</option>
+                            <option value="low">Baixa</option>
+                            <option value="medium">Média</option>
+                            <option value="high">Alta</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input id="filter-overdue" v-model="filterOverdue" type="checkbox"
+                            class="h-4 w-4 rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500" />
+                        <label for="filter-overdue" class="text-sm text-gray-300">Apenas atrasadas</label>
+                    </div>
+                    <div>
+                        <label for="filter-date-from" class="mb-1 block text-sm font-medium text-gray-300">Data
+                            de</label>
+                        <input id="filter-date-from" v-model="filterDateFrom" type="date"
+                            class="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none" />
+                    </div>
+                    <div>
+                        <label for="filter-date-to" class="mb-1 block text-sm font-medium text-gray-300">Data
+                            até</label>
+                        <input id="filter-date-to" v-model="filterDateTo" type="date"
+                            class="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none" />
+                    </div>
+                </div>
+                <div class="mt-4 flex justify-end gap-2">
+                    <button @click="resetFilters"
+                        class="rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-700">
+                        Limpar
+                    </button>
+                    <button @click="applyFilters"
+                        class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700">
+                        Aplicar Filtros
+                    </button>
+                </div>
+            </div>
+
             <div class="flex gap-4 overflow-x-auto pb-4">
                 <div v-for="column in columns" :key="column.key"
                     class="min-w-[280px] flex-1 rounded-lg border border-gray-700 bg-gray-800/50">
                     <div class="border-b border-gray-700 px-4 py-3">
                         <div class="flex items-center justify-between">
                             <h3 class="font-semibold text-white">{{ column.label }}</h3>
-                            <!-- <span class="rounded-full bg-gray-700 px-2 py-0.5 text-xs text-gray-400">
-                                {{ tasksByStatus[column.key].length }}
-                            </span> -->
                         </div>
                     </div>
 
