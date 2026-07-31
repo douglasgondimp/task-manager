@@ -21,3 +21,10 @@ export interface ProjectCreated {
     message: string,
     project: Project
 }
+
+export interface ProjectListParams {
+    search?: string
+    status?: 'active' | 'archived'
+    per_page?: number
+    cursor?: string | null
+}
