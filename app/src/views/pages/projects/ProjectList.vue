@@ -128,35 +128,39 @@ onUnmounted(() => {
 
 <template>
     <div class="projects-page">
-        <div class="mb-6 flex items-center justify-between">
-            <h1 class="text-2xl font-bold text-white">Projetos</h1>
+        <div class="mb-6">
+            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <h1 class="text-2xl font-bold text-white">Projetos</h1>
 
-            <div class="flex items-center gap-3">
-                <button @click="showFilters = !showFilters"
-                    class="inline-flex items-center gap-1.5 rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-700">
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                    </svg>
-                    Filtros
-                </button>
-                <button @click="showCreateModal = true"
-                    class="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700">
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                    </svg>
-                    Novo Projeto
-                </button>
-                <label for="per-page" class="text-sm text-gray-400">Itens por página:</label>
-                <select id="per-page" v-model="perPage"
-                    class="rounded-lg border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none">
-                    <option :value="5">5</option>
-                    <option :value="10">10</option>
-                    <option :value="15">15</option>
-                    <option :value="20">20</option>
-                    <option :value="30">30</option>
-                    <option :value="50">50</option>
-                </select>
+                <div class="flex flex-wrap items-center gap-3">
+                    <button @click="showFilters = !showFilters"
+                        class="inline-flex items-center gap-1.5 rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-700">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                        </svg>
+                        Filtros
+                    </button>
+                    <button @click="showCreateModal = true"
+                        class="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Novo Projeto
+                    </button>
+                    <div class="flex items-center gap-2">
+                        <label for="per-page" class="text-sm text-gray-400">Itens/página:</label>
+                        <select id="per-page" v-model="perPage"
+                            class="rounded-lg border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none">
+                            <option :value="5">5</option>
+                            <option :value="10">10</option>
+                            <option :value="15">15</option>
+                            <option :value="20">20</option>
+                            <option :value="30">30</option>
+                            <option :value="50">50</option>
+                        </select>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -203,14 +207,14 @@ onUnmounted(() => {
         </div>
 
         <template v-else>
-            <div class="grid gap-4">
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                 <div v-for="project in projects" :key="project.id" @click="router.push(`/projects/${project.id}`)"
                     class="cursor-pointer rounded-lg border border-gray-700 bg-gray-800 p-4 shadow-sm transition-shadow hover:border-blue-500 hover:shadow-md">
                     <h2 class="text-lg font-semibold text-white">{{ project.name }}</h2>
                     <p v-if="project.description" class="mt-1 text-gray-400">
                         {{ project.description }}
                     </p>
-                    <div class="mt-2 flex items-center gap-2">
+                    <div class="mt-2 flex flex-wrap items-center gap-2">
                         <span class="inline-block rounded-full px-2 py-0.5 text-xs font-medium"
                             :class="statusClass(project.status.value)">
                             {{ project.status.label }}
