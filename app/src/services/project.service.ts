@@ -1,11 +1,11 @@
 import http from './http'
-import type { Project, ProjectCreated, ProjectCreateData } from '../interfaces/project'
+import type { Project, ProjectCreated, ProjectCreateData, ProjectListParams } from '../interfaces/project'
 import type { CursorPaginatedResponse } from '@/interfaces/paginate'
 
 export const projectService = {
-    async list(perPage = 15, cursor?: string | null): Promise<CursorPaginatedResponse<Project>> {
+    async list(params?: ProjectListParams): Promise<CursorPaginatedResponse<Project>> {
         const response = await http.get<CursorPaginatedResponse<Project>>('/projects', {
-            params: { per_page: perPage, cursor },
+            params: { per_page: 15, ...params },
         })
         return response.data
     },
