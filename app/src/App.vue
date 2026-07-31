@@ -1,8 +1,13 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { provide, ref } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
+import { AlertKey, useAlertProvider } from '@/composables/useAlert'
+import Alert from '@/components/Alert.vue'
 
 const sidebarOpen = ref(false)
+
+const AlertProvider = useAlertProvider()
+provide(AlertKey, AlertProvider)
 </script>
 
 <template>
@@ -46,5 +51,9 @@ const sidebarOpen = ref(false)
                 <RouterView />
             </div>
         </main>
+
+        <!-- API Alert overlay (global) -->
+        <Alert v-model="AlertProvider.show.value" :type="AlertProvider.type.value"
+            :message="AlertProvider.message.value" />
     </div>
 </template>
