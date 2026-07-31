@@ -2,6 +2,7 @@
 import { ref, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProjects } from '@/composables/useProject'
+import { useAlert } from '@/composables/useAlert'
 import AppModal from '@/components/AppModal.vue'
 import ProjectForm from '@/components/ProjectForm.vue'
 import type { ProjectListParams } from '@/interfaces/project'
@@ -24,8 +25,9 @@ const {
 const perPage = ref(15)
 const sentinel = ref<HTMLElement | null>(null)
 const showCreateModal = ref(false)
-const createError = ref<string | null>(null)
 const creatingProject = ref(false)
+
+const apiAlert = useAlert()
 
 // Filter state
 const showFilters = ref(false)
@@ -34,20 +36,35 @@ const filterStatus = ref<'active' | 'archived' | ''>('')
 
 let observer: IntersectionObserver | null = null
 
+let debounceTimer: ReturnType<typeof setTimeout>
+
+// Watch composable errors and show as alerts
+watch(error, (newError) => {
+    if (newError) {
+        apiAlert.showAlert('error', newError)
+    }
+})
+
+watch(loadingMoreError, (newError) => {
+    if (newError) {
+        apiAlert.showAlert('error', newError)
+    }
+})
+
 async function onCreateProject(data: { name: string; description?: string | null }) {
-    createError.value = null
     creatingProject.value = true
 
     try {
         const success = await createProject(data)
         if (success) {
             showCreateModal.value = false
+            apiAlert.showAlert('success', 'Projeto criado com sucesso.')
             return
         }
 
-        createError.value = 'Erro ao criar projeto. Tente novamente.'
+        apiAlert.showAlert('error', 'Erro ao criar projeto. Tente novamente.')
     } catch {
-        createError.value = 'Erro ao criar projeto. Tente novamente.'
+        apiAlert.showAlert('error', 'Erro ao criar projeto. Tente novamente.')
     } finally {
         creatingProject.value = false
     }
@@ -103,7 +120,7 @@ function setupObserver(filters?: ProjectListParams) {
     }
 }
 
-watch(perPage, async () => {
+async function applyFilters() {
     resetProjects()
 
     const filters: ProjectListParams = {
@@ -116,6 +133,10 @@ watch(perPage, async () => {
     await nextTick()
 
     setupObserver(filters)
+}
+
+watch(perPage, async () => {
+    applyFilters()
 })
 
 onMounted(async () => {
@@ -134,6 +155,23 @@ onMounted(async () => {
 onUnmounted(() => {
     observer?.disconnect()
 })
+
+watch(
+    () => filterSearch.value,
+    () => {
+        clearTimeout(debounceTimer)
+
+        debounceTimer = setTimeout(() => {
+            void applyFilters()
+        }, 500)
+    }
+)
+watch(
+    () => filterStatus.value,
+    () => {
+        void applyFilters()
+    }
+)
 </script>
 
 <template>
@@ -208,10 +246,6 @@ onUnmounted(() => {
             <div class="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
         </div>
 
-        <div v-else-if="error" class="rounded-lg bg-red-900/50 p-4 text-red-400 mb-5">
-            {{ error }}
-        </div>
-
         <div v-else-if="projects.length === 0" class="py-12 text-center text-gray-500">
             Nenhum projeto encontrado.
         </div>
@@ -243,9 +277,6 @@ onUnmounted(() => {
             <div ref="sentinel" class="mt-6 flex justify-center py-4">
                 <div v-if="loadingMore"
                     class="h-6 w-6 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
-                <span v-else-if="loadingMoreError" class="text-sm text-red-400">
-                    {{ loadingMoreError }}
-                </span>
                 <span v-else-if="!hasMore" class="text-sm text-gray-500">
                     Todos os projetos foram carregados.
                 </span>
@@ -254,7 +285,6 @@ onUnmounted(() => {
 
         <!-- Create project modal -->
         <AppModal v-model="showCreateModal" title="Novo Projeto">
-            <p v-if="createError" class="mb-3 text-sm text-red-400">{{ createError }}</p>
             <ProjectForm :submitting="creatingProject" @submit="onCreateProject" @cancel="showCreateModal = false" />
         </AppModal>
     </div>
