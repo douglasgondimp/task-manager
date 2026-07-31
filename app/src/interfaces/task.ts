@@ -1,13 +1,15 @@
+export type TaskStatus = 'todo' | 'in_progress' | 'done'
+export type TaskPriority = 'low' | 'medium' | 'high'
 export interface Task {
     id: number
     title: string
     description: string | null
     status: {
-        value: 'todo' | 'in_progress' | 'done'
+        value: TaskStatus
         label: string
     }
     priority: {
-        value: 'low' | 'medium' | 'high'
+        value: TaskPriority
         label: string
     }
     due_date: string | null
@@ -19,16 +21,16 @@ export interface Task {
 export interface TaskCreateData {
     title: string
     description?: string | null
-    status?: 'todo' | 'in_progress' | 'done'
-    priority?: 'low' | 'medium' | 'high'
+    status?: TaskStatus
+    priority?: TaskPriority
     due_date?: string | null
 }
 
 export interface TaskUpdateData {
     title?: string
     description?: string | null
-    status?: 'todo' | 'in_progress' | 'done'
-    priority?: 'low' | 'medium' | 'high'
+    status?: TaskStatus
+    priority?: TaskPriority
     due_date?: string | null
 }
 
@@ -43,3 +45,17 @@ export const TASK_COLUMNS = [
     { key: 'in_progress', label: 'Em desenvolvimento' },
     { key: 'done', label: 'Completo' },
 ] as const
+
+export interface TaskListParams {
+    search?: string | null
+    status: TaskStatus
+    priority?: TaskPriority | null
+    is_overdue?: boolean
+    created_at?: [] | null
+    cursor?: string | null
+}
+
+export interface TaskPagination {
+    nextCursor: string | null
+    hasMore: boolean
+}
