@@ -1,5 +1,5 @@
 import http from './http'
-import type { Task, TaskCreateData, TaskUpdateData, TaskListParams, TaskStatus } from '../interfaces/task'
+import type { Task, TaskCreateData, TaskUpdateData, TaskListParams } from '../interfaces/task'
 import type { CursorPaginatedResponse } from '@/interfaces/paginate'
 
 export const taskService = {
