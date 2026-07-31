@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed, reactive } from 'vue'
+import { ref, reactive } from 'vue'
 import type { Task, TaskPagination, TaskStatus } from '@/interfaces/task'
 
 const taskStatuses: TaskStatus[] = ['todo', 'in_progress', 'done']
@@ -24,6 +24,7 @@ export const useTaskStore = defineStore('tasks', () => {
     const tasksByStatus = reactive(createColumns())
     const pagination = reactive(createPagination())
     const updatingTaskIds = ref<Set<number>>(new Set())
+    const statusFilter = ref<TaskStatus | null>(null)
 
     function setTasks(status: TaskStatus, tasks: Task[]): void {
         tasksByStatus[status] = tasks
@@ -97,10 +98,29 @@ export const useTaskStore = defineStore('tasks', () => {
         updatingTaskIds.value = new Set()
     }
 
+    function setStatusFilter(status: TaskStatus | null): void {
+        statusFilter.value = status
+    }
+
+    function getFilteredTasksByStatus(status: TaskStatus): Task[] {
+        if (!statusFilter.value) {
+            return tasksByStatus[status]
+        }
+
+        // When a status filter is active, only show tasks in the matching column
+        if (status === statusFilter.value) {
+            return tasksByStatus[status]
+        }
+
+        // Return empty array for non-matching columns
+        return []
+    }
+
     return {
         tasksByStatus,
         pagination,
         updatingTaskIds,
+        statusFilter,
         setTasks,
         appendTasks,
         setPagination,
@@ -110,5 +130,7 @@ export const useTaskStore = defineStore('tasks', () => {
         addUpdatingTaskId,
         removeUpdatingTaskId,
         resetTasks,
+        setStatusFilter,
+        getFilteredTasksByStatus,
     }
 })

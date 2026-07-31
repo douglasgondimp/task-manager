@@ -34,6 +34,8 @@ const {
     createTask,
     updateTask,
     deleteTask,
+    setStatusFilter,
+    getFilteredTasksByStatus,
 } = useTask()
 
 const loading = computed(() => loadingProject.value || loadingTasks.value)
@@ -77,22 +79,6 @@ async function loadProject(): Promise<void> {
         fetchProject(projectId),
         fetchTasks(projectId),
     ])
-}
-
-function priorityClass(priority: string): string {
-    const map: Record<string, string> = {
-        low: 'border-green-500 text-green-400',
-        medium: 'border-yellow-500 text-yellow-400',
-        high: 'border-red-500 text-red-400',
-    }
-    return map[priority] || 'border-gray-500 text-gray-400'
-}
-
-function formatDate(dateStr: string | null): string {
-    if (!dateStr) return ''
-    const [date] = dateStr.split('T')
-    const [year, month, day] = date!.split('-')
-    return `${day}/${month}/${year}`
 }
 
 async function onTaskAdd(
@@ -222,11 +208,14 @@ async function onUpdateTask(data: {
 function applyFilters() {
     const filters: TaskListParams = {
         search: filterSearch.value || undefined,
-        status: (filterStatus.value || undefined) as TaskListParams['status'],
         priority: filterPriority.value || undefined,
         is_overdue: filterOverdue.value || undefined,
         created_at: (filterDateFrom.value && filterDateTo.value) ? [filterDateFrom.value, filterDateTo.value] : undefined,
     }
+
+    // Set status filter for client-side filtering
+    setStatusFilter(filterStatus.value || null)
+
     loadProjectTasks(filters)
 }
 
@@ -237,6 +226,10 @@ function resetFilters() {
     filterOverdue.value = false
     filterDateFrom.value = ''
     filterDateTo.value = ''
+
+    // Clear status filter
+    setStatusFilter(null)
+
     loadProjectTasks()
 }
 
@@ -388,7 +381,7 @@ onMounted(() => {
                         <VueDraggable v-model="tasksByStatus[column.key]" group="kanban-tasks" :animation="200"
                             ghost-class="opacity-40" class="flex min-h-[200px] flex-col gap-2 p-3"
                             @add="onTaskAdd(column.key, $event)">
-                            <TaskCard v-for="task in tasksByStatus[column.key]" :key="task.id" :task="task"
+                            <TaskCard v-for="task in getFilteredTasksByStatus(column.key)" :key="task.id" :task="task"
                                 :class="{ 'opacity-50': updatingTaskIds.has(task.id) }" @click="onTaskClick"
                                 @delete="onTaskDelete" />
                         </VueDraggable>
@@ -402,7 +395,7 @@ onMounted(() => {
                             {{ taskErrors[column.key] }}. Tentar novamente.
                         </button>
 
-                        <p v-else-if="!pagination[column.key].hasMore && tasksByStatus[column.key].length > 0"
+                        <p v-else-if="!pagination[column.key].hasMore && getFilteredTasksByStatus(column.key).length > 0"
                             class="p-3 text-center text-xs text-gray-500">
                             Todas as tarefas foram carregadas.
                         </p>
@@ -443,7 +436,7 @@ onMounted(() => {
             <div class="space-y-4">
                 <p class="text-sm text-gray-300">
                     Tem certeza que deseja excluir a tarefa <strong class="text-white">{{ taskToDelete?.title
-                    }}</strong>?
+                        }}</strong>?
                 </p>
                 <p v-if="deleteError" class="text-sm text-red-400">{{ deleteError }}</p>
                 <div class="flex justify-end gap-3">

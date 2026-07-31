@@ -14,7 +14,7 @@ const taskStatuses: TaskStatus[] = ['todo', 'in_progress', 'done']
 
 export function useTask() {
     const taskStore = useTaskStore()
-    const { tasksByStatus, pagination, updatingTaskIds } = storeToRefs(taskStore)
+    const { tasksByStatus, pagination, updatingTaskIds, statusFilter } = storeToRefs(taskStore)
 
     const loading = ref(false)
     const loadingMore = reactive<Record<TaskStatus, boolean>>({
@@ -36,7 +36,9 @@ export function useTask() {
         errors[status] = null
 
         try {
-            const response = await taskService.listByProject(projectId, undefined, { ...filters, status })
+            // Remove status filter from filters, but keep the column's status for the API call
+            const { status: _, ...filtersWithoutStatus } = filters || {}
+            const response = await taskService.listByProject(projectId, undefined, { ...filtersWithoutStatus, status })
 
             taskStore.setTasks(status, response.data)
             taskStore.setPagination(status, response.meta.next_cursor)
@@ -50,11 +52,17 @@ export function useTask() {
         taskStore.resetTasks()
 
         try {
-            await Promise.all(
-                taskStatuses.map((status) =>
-                    fetchTaskColumn(projectId, status, filters),
-                ),
-            )
+            const filteredStatus = statusFilter.value
+
+            if (filteredStatus) {
+                await fetchTaskColumn(projectId, filteredStatus, filters)
+            } else {
+                await Promise.all(
+                    taskStatuses.map((status) =>
+                        fetchTaskColumn(projectId, status, filters),
+                    ),
+                )
+            }
         } finally {
             loading.value = false
         }
@@ -64,6 +72,10 @@ export function useTask() {
         projectId: number,
         status: TaskStatus,
     ): Promise<void> {
+        if (statusFilter.value && status !== statusFilter.value) {
+            return
+        }
+
         const currentPagination = pagination.value[status]
 
         if (
@@ -140,10 +152,19 @@ export function useTask() {
         }
     }
 
+    function setStatusFilter(status: TaskStatus | null): void {
+        taskStore.setStatusFilter(status)
+    }
+
+    function getFilteredTasksByStatus(status: TaskStatus): Task[] {
+        return taskStore.getFilteredTasksByStatus(status)
+    }
+
     return {
         tasksByStatus,
         pagination,
         updatingTaskIds,
+        statusFilter,
         loading,
         loadingMore,
         errors,
@@ -153,5 +174,7 @@ export function useTask() {
         updateTask,
         updateTaskStatus,
         deleteTask,
+        setStatusFilter,
+        getFilteredTasksByStatus,
     }
 }
