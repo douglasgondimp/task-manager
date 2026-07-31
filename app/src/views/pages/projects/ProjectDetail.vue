@@ -33,6 +33,7 @@ const {
     updateTaskStatus,
     createTask,
     updateTask,
+    deleteTask,
 } = useTask()
 
 const loading = computed(() => loadingProject.value || loadingTasks.value)
@@ -45,6 +46,9 @@ const showTaskEditModal = ref(false)
 const taskEditError = ref<string | null>(null)
 const selectedTask = ref<Task | null>(null)
 const updateError = ref<string | null>(null)
+const showDeleteModal = ref(false)
+const taskToDelete = ref<Task | null>(null)
+const deleteError = ref<string | null>(null)
 
 // Filter state
 const showFilters = ref(false)
@@ -165,6 +169,32 @@ async function onEditProject(data: { name: string; description?: string | null; 
 function onTaskClick(task: Task) {
     selectedTask.value = task
     showTaskEditModal.value = true
+}
+
+function onTaskDelete(task: Task) {
+    taskToDelete.value = task
+    showDeleteModal.value = true
+    deleteError.value = null
+}
+
+async function confirmDeleteTask() {
+    if (!taskToDelete.value) return
+
+    deleteError.value = null
+    const success = await deleteTask(taskToDelete.value.id)
+
+    if (success) {
+        showDeleteModal.value = false
+        taskToDelete.value = null
+    } else {
+        deleteError.value = 'Erro ao excluir tarefa'
+    }
+}
+
+function cancelDeleteTask() {
+    showDeleteModal.value = false
+    taskToDelete.value = null
+    deleteError.value = null
 }
 
 async function onUpdateTask(data: {
@@ -362,7 +392,8 @@ onMounted(() => {
                             ghost-class="opacity-40" class="flex min-h-[200px] flex-col gap-2 p-3"
                             @add="onTaskAdd(column.key, $event)">
                             <TaskCard v-for="task in tasksByStatus[column.key]" :key="task.id" :task="task"
-                                :class="{ 'opacity-50': updatingTaskIds.has(task.id) }" @click="onTaskClick" />
+                                :class="{ 'opacity-50': updatingTaskIds.has(task.id) }" @click="onTaskClick"
+                                @delete="onTaskDelete" />
                         </VueDraggable>
 
                         <div v-if="loadingMore[column.key]" class="p-3 text-center text-sm text-gray-400">
@@ -408,6 +439,27 @@ onMounted(() => {
                 priority: selectedTask.priority.value,
                 due_date: selectedTask.due_date,
             }" @submit="onUpdateTask" @cancel="showTaskEditModal = false" />
+        </AppModal>
+
+        <!-- Delete task confirmation modal -->
+        <AppModal v-model="showDeleteModal" title="Confirmar Exclusão">
+            <div class="space-y-4">
+                <p class="text-sm text-gray-300">
+                    Tem certeza que deseja excluir a tarefa <strong class="text-white">{{ taskToDelete?.title
+                        }}</strong>?
+                </p>
+                <p v-if="deleteError" class="text-sm text-red-400">{{ deleteError }}</p>
+                <div class="flex justify-end gap-3">
+                    <button @click="cancelDeleteTask"
+                        class="rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-700">
+                        Não
+                    </button>
+                    <button @click="confirmDeleteTask"
+                        class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700">
+                        Sim
+                    </button>
+                </div>
+            </div>
         </AppModal>
     </div>
 </template>
