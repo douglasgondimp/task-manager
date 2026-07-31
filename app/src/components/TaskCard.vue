@@ -50,14 +50,15 @@ function formatDate(dateStr: string | null): string {
             </div>
         </div>
 
-        <!-- Delete button (appears on hover) -->
-        <button @click.stop="emit('delete', task)"
-            class="absolute bottom-2 right-2 rounded-lg p-1.5 text-gray-400 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-900/50 hover:text-red-400"
-            title="Excluir tarefa">
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-        </button>
+        <div class="text-right">
+            <button @click.stop="emit('delete', task)"
+                class="rounded-lg p-1.5 text-gray-400 cursor-pointer transition-opacity bg-red-900/50 hover:text-red-400"
+                title="Excluir tarefa">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            </button>
+        </div>
     </div>
 </template>
