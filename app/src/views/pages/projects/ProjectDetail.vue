@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { VueDraggable, type DraggableEvent } from 'vue-draggable-plus'
 import { useTask } from '@/composables/useTask'
 import { useProjects } from '@/composables/useProject'
+import { useAlert } from '@/composables/useAlert'
 import AppModal from '@/components/AppModal.vue'
 import ProjectForm from '@/components/ProjectForm.vue'
 import TaskForm from '@/components/TaskForm.vue'
@@ -42,19 +43,23 @@ const loadingP = computed(() => loadingProject.value)
 const loadingT = computed(() => loadingTasks.value)
 const error = computed(() => projectError.value)
 const showCreateModal = ref(false)
-const createError = ref<string | null>(null)
 const showEditModal = ref(false)
-const editError = ref<string | null>(null)
 const showTaskEditModal = ref(false)
-const taskEditError = ref<string | null>(null)
 const selectedTask = ref<Task | null>(null)
-const updateError = ref<string | null>(null)
 const showDeleteModal = ref(false)
 const taskToDelete = ref<Task | null>(null)
-const deleteError = ref<string | null>(null)
 const creatingTask = ref(false)
 const updatingTask = ref(false)
 const updatingProject = ref(false)
+
+const apiAlert = useAlert()
+
+// Watch composable errors and show as alerts
+watch(error, (newError) => {
+    if (newError) {
+        apiAlert.showAlert('error', newError)
+    }
+})
 
 // Filter state
 const showFilters = ref(false)
@@ -99,9 +104,14 @@ async function onTaskAdd(
 
     const updatedTask = await updateTaskStatus(task.id, columnStatus)
 
-    if (!updatedTask) {
-        await fetchTasks(Number(route.params.id))
+    if (updatedTask) {
+        apiAlert.showAlert('success', 'Tarefa atualizada com sucesso.')
+        return
     }
+
+    await fetchTasks(Number(route.params.id))
+    apiAlert.showAlert('error', 'Ocorreu um erro ao atualizar a tarefa')
+
 }
 
 async function onColumnScroll(
@@ -123,7 +133,6 @@ async function onCreateTask(data: {
     priority: 'low' | 'medium' | 'high'
     due_date?: string | null
 }) {
-    createError.value = null
     creatingTask.value = true
 
     try {
@@ -136,11 +145,12 @@ async function onCreateTask(data: {
         })
         if (task) {
             showCreateModal.value = false
+            apiAlert.showAlert('success', 'Tarefa criada com sucesso.')
         } else {
-            createError.value = 'Erro ao criar tarefa. Tente novamente.'
+            apiAlert.showAlert('error', 'Erro ao criar tarefa. Tente novamente.')
         }
     } catch {
-        createError.value = 'Erro ao criar tarefa. Tente novamente.'
+        apiAlert.showAlert('error', 'Erro ao criar tarefa. Tente novamente.')
     } finally {
         creatingTask.value = false
     }
@@ -156,8 +166,6 @@ function getStatusLabel(status: string): string {
 
 // Edit modal
 async function onEditProject(data: { name: string; description?: string | null; status?: 'active' | 'archived' }) {
-    editError.value = null
-
     if (!project.value) return
 
     updatingProject.value = true
@@ -166,12 +174,13 @@ async function onEditProject(data: { name: string; description?: string | null; 
         const success = await updateProject(project.value.id, data)
         if (success) {
             showEditModal.value = false
+            apiAlert.showAlert('success', 'Projeto atualizado com sucesso.')
             return
         }
 
-        editError.value = 'Erro ao atualizar projeto'
+        apiAlert.showAlert('error', 'Erro ao atualizar projeto')
     } catch {
-        editError.value = 'Erro ao atualizar projeto'
+        apiAlert.showAlert('error', 'Erro ao atualizar projeto')
     } finally {
         updatingProject.value = false
     }
@@ -185,27 +194,25 @@ function onTaskClick(task: Task) {
 function onTaskDelete(task: Task) {
     taskToDelete.value = task
     showDeleteModal.value = true
-    deleteError.value = null
 }
 
 async function confirmDeleteTask() {
     if (!taskToDelete.value) return
 
-    deleteError.value = null
     const success = await deleteTask(taskToDelete.value.id)
 
     if (success) {
         showDeleteModal.value = false
         taskToDelete.value = null
+        apiAlert.showAlert('success', 'Tarefa excluída com sucesso.')
     } else {
-        deleteError.value = 'Erro ao excluir tarefa'
+        apiAlert.showAlert('error', 'Erro ao excluir tarefa')
     }
 }
 
 function cancelDeleteTask() {
     showDeleteModal.value = false
     taskToDelete.value = null
-    deleteError.value = null
 }
 
 async function onUpdateTask(data: {
@@ -214,8 +221,6 @@ async function onUpdateTask(data: {
     priority: 'low' | 'medium' | 'high'
     due_date?: string | null
 }) {
-    taskEditError.value = null
-
     if (!selectedTask.value) return
 
     updatingTask.value = true
@@ -230,12 +235,13 @@ async function onUpdateTask(data: {
 
         if (success) {
             showTaskEditModal.value = false
+            apiAlert.showAlert('success', 'Tarefa atualizada com sucesso.')
             return
         }
 
-        taskEditError.value = 'Erro ao atualizar tarefa'
+        apiAlert.showAlert('error', 'Erro ao atualizar tarefa')
     } catch {
-        taskEditError.value = 'Erro ao atualizar tarefa'
+        apiAlert.showAlert('error', 'Erro ao atualizar tarefa')
     } finally {
         updatingTask.value = false
     }
@@ -320,10 +326,6 @@ onBeforeUnmount(() => {
             <div class="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
         </div>
 
-        <div v-else-if="error" class="rounded-lg bg-red-900/50 p-4 text-red-400 mb-5">
-            {{ error }}
-        </div>
-
         <template v-if="project">
             <div class="mb-6">
                 <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -367,11 +369,6 @@ onBeforeUnmount(() => {
                         </button>
                     </div>
                 </div>
-            </div>
-
-            <!-- Update error -->
-            <div v-if="updateError" class="mb-4 rounded-lg bg-red-900/50 p-3 text-sm text-red-400">
-                {{ updateError }}
             </div>
 
             <!-- Filters panel -->
@@ -478,13 +475,11 @@ onBeforeUnmount(() => {
 
         <!-- Create task modal -->
         <AppModal v-model="showCreateModal" title="Nova Tarefa">
-            <p v-if="createError" class="mb-3 text-sm text-red-400">{{ createError }}</p>
             <TaskForm :submiting="creatingTask" @submit="onCreateTask" @cancel="showCreateModal = false" />
         </AppModal>
 
         <!-- Edit project modal -->
         <AppModal v-model="showEditModal" title="Editar Projeto">
-            <p v-if="editError" class="mb-3 text-sm text-red-400">{{ editError }}</p>
             <ProjectForm v-if="project" :initial-data="{
                 name: project.name,
                 description: project.description,
@@ -495,7 +490,6 @@ onBeforeUnmount(() => {
 
         <!-- Edit task modal -->
         <AppModal v-model="showTaskEditModal" title="Editar Tarefa">
-            <p v-if="taskEditError" class="mb-3 text-sm text-red-400">{{ taskEditError }}</p>
             <TaskForm v-if="selectedTask" :initial-data="{
                 title: selectedTask.title,
                 description: selectedTask.description,
@@ -509,9 +503,8 @@ onBeforeUnmount(() => {
             <div class="space-y-4">
                 <p class="text-sm text-gray-300">
                     Tem certeza que deseja excluir a tarefa <strong class="text-white">{{ taskToDelete?.title
-                    }}</strong>?
+                        }}</strong>?
                 </p>
-                <p v-if="deleteError" class="text-sm text-red-400">{{ deleteError }}</p>
                 <div class="flex justify-end gap-3">
                     <button @click="cancelDeleteTask"
                         class="rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-700">
