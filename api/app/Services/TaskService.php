@@ -17,7 +17,7 @@ class TaskService
         $query = $this->filterTasks($query, $filters);
 
         return $query->latest('id')
-            ->cursorPaginate(20)
+            ->cursorPaginate(10)
             ->withqueryString();
     }
 
