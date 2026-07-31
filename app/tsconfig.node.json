@@ -13,13 +13,15 @@
     // Bundler mode provides a smoother developer experience.
     "module": "preserve",
     "moduleResolution": "bundler",
-
     // Include Node.js types and avoid accidentally including other `@types/*` packages.
-    "types": ["node"],
-
+    "types": [
+      "node"
+    ],
     // Disable emitting output during `vue-tsc --build`, which is used for type-checking only.
     "noEmit": true,
-
+    // Allows importing local modules with explicit `.ts` extensions (e.g. `./vite.config.ts`).
+    // Safe because `noEmit` is enabled above — imports won't be emitted.
+    "allowImportingTsExtensions": true,
     // `vue-tsc --build` produces a .tsbuildinfo file for incremental type-checking.
     // Specified here to keep it out of the root directory.
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo"
