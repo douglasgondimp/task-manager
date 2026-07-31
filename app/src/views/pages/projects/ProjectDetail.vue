@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { VueDraggable, type DraggableEvent } from 'vue-draggable-plus'
 import { useTask } from '@/composables/useTask'
@@ -8,7 +8,7 @@ import AppModal from '@/components/AppModal.vue'
 import ProjectForm from '@/components/ProjectForm.vue'
 import TaskForm from '@/components/TaskForm.vue'
 import TaskCard from '@/components/TaskCard.vue'
-import type { Task } from '@/interfaces/task'
+import type { Task, TaskStatus } from '@/interfaces/task'
 
 const route = useRoute()
 const router = useRouter()
@@ -22,19 +22,21 @@ const {
 } = useProjects()
 
 const {
-    tasks,
+    tasksByStatus,
+    pagination,
     loading: loadingTasks,
-    error: tasksError,
+    loadingMore,
+    errors: taskErrors,
     updatingTaskIds,
     fetchTasks,
+    loadMoreTasks,
     updateTaskStatus,
     createTask,
     updateTask,
 } = useTask()
 
-const loading = ref(true)
-const error = ref<string | null>(null)
-let draggedTaskId: number | null = null
+const loading = computed(() => loadingProject.value || loadingTasks.value)
+const error = computed(() => projectError.value)
 const showCreateModal = ref(false)
 const createError = ref<string | null>(null)
 const showEditModal = ref(false)
@@ -42,12 +44,6 @@ const editError = ref<string | null>(null)
 const showTaskEditModal = ref(false)
 const taskEditError = ref<string | null>(null)
 const selectedTask = ref<Task | null>(null)
-
-// Inline editing state
-const editingTitle = ref(false)
-const editingDescription = ref(false)
-const editTitle = ref('')
-const editDescription = ref('')
 const updateError = ref<string | null>(null)
 
 const columns = [
@@ -55,26 +51,6 @@ const columns = [
     { key: 'in_progress', label: 'Em desenvolvimento' },
     { key: 'done', label: 'Completo' },
 ] as const
-
-const todoList = ref<Task[]>([])
-const inProgressList = ref<Task[]>([])
-const doneList = ref<Task[]>([])
-
-const columnMap: Record<string, typeof todoList> = {
-    todo: todoList,
-    in_progress: inProgressList,
-    done: doneList,
-}
-
-function groupTasksByStatus() {
-    todoList.value = tasks.value.filter((t) => t.status.value === 'todo')
-    inProgressList.value = tasks.value.filter((t) => t.status.value === 'in_progress')
-    doneList.value = tasks.value.filter((t) => t.status.value === 'done')
-}
-
-watch(tasks, () => {
-    groupTasksByStatus()
-}, { deep: true })
 
 async function loadProject(): Promise<void> {
     const projectId = Number(route.params.id)
@@ -84,15 +60,10 @@ async function loadProject(): Promise<void> {
         return
     }
 
-    loading.value = true
-    error.value = null
-
     await Promise.all([
         fetchProject(projectId),
         fetchTasks(projectId),
     ])
-
-    loading.value = false
 }
 
 function priorityClass(priority: string): string {
@@ -106,18 +77,39 @@ function priorityClass(priority: string): string {
 
 function formatDate(dateStr: string | null): string {
     if (!dateStr) return ''
-    return new Date(dateStr).toLocaleDateString('pt-BR')
+    const [date] = dateStr.split('T')
+    const [year, month, day] = date!.split('-')
+    return `${day}/${month}/${year}`
 }
 
-async function onTaskAdd(columnStatus: string, event: DraggableEvent): Promise<void> {
-    const newIndex = event.newIndex as number
+async function onTaskAdd(
+    columnStatus: TaskStatus,
+    event: DraggableEvent,
+): Promise<void> {
+    const newIndex = event.newIndex
     if (newIndex === undefined) return
 
-    const targetList = columnMap[columnStatus]
-    const task = targetList?.value[newIndex]
+    const task = tasksByStatus.value[columnStatus][newIndex]
     if (!task || task.status.value === columnStatus) return
 
-    await updateTaskStatus(task.id, columnStatus as Task['status']['value'])
+    const updatedTask = await updateTaskStatus(task.id, columnStatus)
+
+    if (!updatedTask) {
+        await fetchTasks(Number(route.params.id))
+    }
+}
+
+async function onColumnScroll(
+    status: TaskStatus,
+    event: Event,
+): Promise<void> {
+    const element = event.currentTarget as HTMLElement
+    const distanceFromBottom =
+        element.scrollHeight - element.scrollTop - element.clientHeight
+
+    if (distanceFromBottom > 200) return
+
+    await loadMoreTasks(Number(route.params.id), status)
 }
 
 async function onCreateTask(data: {
@@ -187,18 +179,8 @@ async function onUpdateTask(data: {
     }
 }
 
-function onStart(event: DraggableEvent) {
-    const oldIndex = event.oldIndex as number
-    for (const [_key, list] of Object.entries(columnMap)) {
-        if (list.value[oldIndex]) {
-            draggedTaskId = list.value[oldIndex].id
-            break
-        }
-    }
-}
-
 onMounted(() => {
-    loadProject()
+    void loadProject()
 })
 </script>
 
@@ -218,7 +200,7 @@ onMounted(() => {
         </div>
 
         <template v-else-if="project">
-            <div class="mb-6 flex items-center justify-between">
+            <div class="mb-6 flex gap-2 items-center justify-between">
                 <div>
                     <div class="mt-2 flex items-center gap-2">
                         <button
@@ -232,9 +214,9 @@ onMounted(() => {
                     <h1 class="text-2xl font-bold text-white">{{ project.name }}</h1>
                     <p v-if="project.description" class="mt-1 text-gray-400">{{ project.description }}</p>
                 </div>
-                <div class="flex gap-2">
+                <div class="text-right">
                     <button @click="showEditModal = true"
-                        class="inline-flex items-center gap-1.5 rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-700">
+                        class="inline-flex items-center gap-1.5 mb-3 rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-700">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -262,18 +244,34 @@ onMounted(() => {
                     <div class="border-b border-gray-700 px-4 py-3">
                         <div class="flex items-center justify-between">
                             <h3 class="font-semibold text-white">{{ column.label }}</h3>
-                            <span class="rounded-full bg-gray-700 px-2 py-0.5 text-xs text-gray-400">
-                                {{ columnMap[column.key]?.value.length ?? 0 }}
-                            </span>
+                            <!-- <span class="rounded-full bg-gray-700 px-2 py-0.5 text-xs text-gray-400">
+                                {{ tasksByStatus[column.key].length }}
+                            </span> -->
                         </div>
                     </div>
 
-                    <VueDraggable v-model="columnMap[column.key]!.value" group="kanban-tasks" :animation="200"
-                        ghost-class="opacity-40" class="flex min-h-[200px] flex-col gap-2 p-3"
-                        @add="onTaskAdd(column.key, $event)" @start="onStart($event)">
-                        <TaskCard v-for="task in columnMap[column.key]!.value" :key="task.id" :task="task"
-                            :class="{ 'opacity-50': updatingTaskIds.has(task.id) }" @click="onTaskClick" />
-                    </VueDraggable>
+                    <div class="max-h-[65vh] overflow-y-auto" @scroll.passive="onColumnScroll(column.key, $event)">
+                        <VueDraggable v-model="tasksByStatus[column.key]" group="kanban-tasks" :animation="200"
+                            ghost-class="opacity-40" class="flex min-h-[200px] flex-col gap-2 p-3"
+                            @add="onTaskAdd(column.key, $event)">
+                            <TaskCard v-for="task in tasksByStatus[column.key]" :key="task.id" :task="task"
+                                :class="{ 'opacity-50': updatingTaskIds.has(task.id) }" @click="onTaskClick" />
+                        </VueDraggable>
+
+                        <div v-if="loadingMore[column.key]" class="p-3 text-center text-sm text-gray-400">
+                            Carregando...
+                        </div>
+
+                        <button v-if="taskErrors[column.key]" class="w-full p-3 text-sm text-red-400"
+                            @click="loadMoreTasks(Number(route.params.id), column.key)">
+                            {{ taskErrors[column.key] }}. Tentar novamente.
+                        </button>
+
+                        <p v-else-if="!pagination[column.key].hasMore && tasksByStatus[column.key].length > 0"
+                            class="p-3 text-center text-xs text-gray-500">
+                            Todas as tarefas foram carregadas.
+                        </p>
+                    </div>
                 </div>
             </div>
         </template>
