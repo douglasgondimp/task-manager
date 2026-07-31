@@ -28,8 +28,7 @@ function formatDate(dateStr: string | null): string {
 
 <template>
     <div @click="emit('click', task)"
-        class="cursor-pointer rounded-lg border border-gray-600 bg-gray-800 p-3 shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing"
-        :class="{ 'opacity-50': task }">
+        class="cursor-pointer rounded-lg border border-gray-600 bg-gray-800 p-3 shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing">
         <div class="flex items-start justify-between gap-2">
             <h4 class="text-sm font-medium text-white">{{ task.title }}</h4>
             <span class="shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-medium uppercase"
