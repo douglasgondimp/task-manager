@@ -122,9 +122,16 @@ async function onColumnScroll(
     const distanceFromBottom =
         element.scrollHeight - element.scrollTop - element.clientHeight
 
+    const filters: TaskListParams = {
+        search: filterSearch.value || undefined,
+        priority: filterPriority.value || undefined,
+        is_overdue: filterOverdue.value || undefined,
+        created_at: (filterDateFrom.value && filterDateTo.value) ? [filterDateFrom.value, filterDateTo.value] : undefined,
+    }
+
     if (distanceFromBottom > 200) return
 
-    await loadMoreTasks(Number(route.params.id), status)
+    await loadMoreTasks(Number(route.params.id), status, filters)
 }
 
 async function onCreateTask(data: {
@@ -475,7 +482,7 @@ onBeforeUnmount(() => {
 
         <!-- Create task modal -->
         <AppModal v-model="showCreateModal" title="Nova Tarefa">
-            <TaskForm :submiting="creatingTask" @submit="onCreateTask" @cancel="showCreateModal = false" />
+            <TaskForm :submitting="creatingTask" @submit="onCreateTask" @cancel="showCreateModal = false" />
         </AppModal>
 
         <!-- Edit project modal -->

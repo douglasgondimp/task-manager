@@ -71,6 +71,7 @@ export function useTask() {
     async function loadMoreTasks(
         projectId: number,
         status: TaskStatus,
+        filters?: TaskListParams
     ): Promise<void> {
         if (statusFilter.value && status !== statusFilter.value) {
             return
@@ -93,7 +94,10 @@ export function useTask() {
             const response = await taskService.listByProject(
                 projectId,
                 currentPagination.nextCursor,
-                { status },
+                {
+                    ...filters,
+                    status
+                },
             )
 
             taskStore.appendTasks(status, response.data)
