@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, watch, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { VueDraggable, type DraggableEvent } from 'vue-draggable-plus'
 import { useTask } from '@/composables/useTask'
@@ -60,6 +60,8 @@ const filterPriority = ref<'low' | 'medium' | 'high' | ''>('')
 const filterOverdue = ref(false)
 const filterDateFrom = ref('')
 const filterDateTo = ref('')
+
+let debounceTimer: ReturnType<typeof setTimeout>
 
 const columns = [
     { key: 'todo', label: 'A fazer' },
@@ -240,6 +242,35 @@ async function loadProjectTasks(filters?: TaskListParams) {
 
 onMounted(() => {
     void loadProject()
+})
+
+watch(
+    [
+        () => filterSearch.value,
+        () => filterDateFrom.value,
+        () => filterDateTo.value
+    ],
+    () => {
+        clearTimeout(debounceTimer)
+
+        debounceTimer = setTimeout(() => {
+            void applyFilters()
+        }, 500)
+    }
+)
+watch(
+    [
+        () => filterStatus.value,
+        () => filterPriority.value,
+        () => filterOverdue.value,
+    ],
+    () => {
+        void applyFilters()
+    }
+)
+
+onBeforeUnmount(() => {
+    clearTimeout(debounceTimer)
 })
 </script>
 
