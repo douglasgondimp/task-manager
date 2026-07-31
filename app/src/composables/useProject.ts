@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { projectService } from '@/services/project.service'
 import { useProjectStore } from '@/stores/projects'
-import type { ProjectCreateData } from '@/interfaces/project'
+import type { ProjectCreateData, ProjectListParams } from '@/interfaces/project'
 
 export function useProjects() {
     const projectStore = useProjectStore()
@@ -20,13 +20,13 @@ export function useProjects() {
     const error = ref<string | null>(null)
     const loadingMoreError = ref<string | null>(null)
 
-    async function fetchProjects(perPage = 15): Promise<void> {
+    async function fetchProjects(params?: ProjectListParams): Promise<void> {
         loading.value = true
         error.value = null
         loadingMoreError.value = null
 
         try {
-            const response = await projectService.list(perPage)
+            const response = await projectService.list(params)
 
             projectStore.setProjects(response.data)
             projectStore.setPagination(response.meta.next_cursor)
@@ -37,7 +37,7 @@ export function useProjects() {
         }
     }
 
-    async function loadMoreProjects(perPage = 15): Promise<void> {
+    async function loadMoreProjects(params?: ProjectListParams): Promise<void> {
         if (
             loading.value ||
             loadingMore.value ||
@@ -51,10 +51,10 @@ export function useProjects() {
         loadingMoreError.value = null
 
         try {
-            const response = await projectService.list(
-                perPage,
-                nextCursor.value,
-            )
+            const response = await projectService.list({
+                ...params,
+                cursor: nextCursor.value,
+            })
 
             projectStore.appendProjects(response.data)
             projectStore.setPagination(response.meta.next_cursor)
