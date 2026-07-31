@@ -11,7 +11,7 @@ const props = withDefaults(
         duration?: number
     }>(),
     {
-        duration: 100000,
+        duration: 5000,
     },
 )
 
