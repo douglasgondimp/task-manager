@@ -1,32 +1,82 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import type { Task } from '@/interfaces/task'
+import { ref, computed, reactive } from 'vue'
+import type { Task, TaskPagination, TaskStatus } from '@/interfaces/task'
+
+const taskStatuses: TaskStatus[] = ['todo', 'in_progress', 'done']
+
+function createColumns(): Record<TaskStatus, Task[]> {
+    return {
+        todo: [],
+        in_progress: [],
+        done: [],
+    }
+}
+
+function createPagination(): Record<TaskStatus, TaskPagination> {
+    return {
+        todo: { nextCursor: null, hasMore: true },
+        in_progress: { nextCursor: null, hasMore: true },
+        done: { nextCursor: null, hasMore: true },
+    }
+}
 
 export const useTaskStore = defineStore('tasks', () => {
-    const tasks = ref<Task[]>([])
+    const tasksByStatus = reactive(createColumns())
+    const pagination = reactive(createPagination())
     const updatingTaskIds = ref<Set<number>>(new Set())
 
-    const todoTasks = computed(() => tasks.value.filter((t) => t.status.value === 'todo'))
-    const inProgressTasks = computed(() => tasks.value.filter((t) => t.status.value === 'in_progress'))
-    const doneTasks = computed(() => tasks.value.filter((t) => t.status.value === 'done'))
+    function setTasks(status: TaskStatus, tasks: Task[]): void {
+        tasksByStatus[status] = tasks
+    }
 
-    function setTasks(data: Task[]): void {
-        tasks.value = data
+    function appendTasks(status: TaskStatus, tasks: Task[]): void {
+        const loadedIds = new Set(tasksByStatus[status].map((task) => task.id))
+
+        tasksByStatus[status].push(
+            ...tasks.filter((task) => !loadedIds.has(task.id)),
+        )
+    }
+
+    function setPagination(status: TaskStatus, nextCursor: string | null): void {
+        pagination[status].nextCursor = nextCursor
+        pagination[status].hasMore = nextCursor !== null
     }
 
     function addTask(task: Task): void {
-        tasks.value.push(task)
+        tasksByStatus[task.status.value].unshift(task)
     }
 
-    function updateTaskById(taskId: number, updatedTask: Task): void {
-        const index = tasks.value.findIndex((t) => t.id === taskId)
-        if (index !== -1) {
-            tasks.value[index] = updatedTask
+    function updateTask(updatedTask: Task): void {
+        let currentStatus: TaskStatus | null = null
+        let currentIndex = -1
+
+        for (const status of taskStatuses) {
+            const index = tasksByStatus[status].findIndex(
+                (task) => task.id === updatedTask.id,
+            )
+
+            if (index !== -1) {
+                currentStatus = status
+                currentIndex = index
+                break
+            }
         }
+
+        if (currentStatus === updatedTask.status.value) {
+            tasksByStatus[currentStatus][currentIndex] = updatedTask
+            return
+        }
+
+        removeTask(updatedTask.id)
+        tasksByStatus[updatedTask.status.value].unshift(updatedTask)
     }
 
-    function removeTaskById(taskId: number): void {
-        tasks.value = tasks.value.filter((t) => t.id !== taskId)
+    function removeTask(taskId: number): void {
+        for (const status of taskStatuses) {
+            tasksByStatus[status] = tasksByStatus[status].filter(
+                (task) => task.id !== taskId,
+            )
+        }
     }
 
     function addUpdatingTaskId(taskId: number): void {
@@ -38,20 +88,25 @@ export const useTaskStore = defineStore('tasks', () => {
     }
 
     function resetTasks(): void {
-        tasks.value = []
+        for (const status of taskStatuses) {
+            tasksByStatus[status] = []
+            pagination[status].nextCursor = null
+            pagination[status].hasMore = true
+        }
+
         updatingTaskIds.value = new Set()
     }
 
     return {
-        tasks,
+        tasksByStatus,
+        pagination,
         updatingTaskIds,
-        todoTasks,
-        inProgressTasks,
-        doneTasks,
         setTasks,
+        appendTasks,
+        setPagination,
         addTask,
-        updateTaskById,
-        removeTaskById,
+        updateTask,
+        removeTask,
         addUpdatingTaskId,
         removeUpdatingTaskId,
         resetTasks,
