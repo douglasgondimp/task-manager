@@ -38,7 +38,8 @@ const {
     getFilteredTasksByStatus,
 } = useTask()
 
-const loading = computed(() => loadingProject.value || loadingTasks.value)
+const loadingP = computed(() => loadingProject.value)
+const loadingT = computed(() => loadingTasks.value)
 const error = computed(() => projectError.value)
 const showCreateModal = ref(false)
 const createError = ref<string | null>(null)
@@ -281,7 +282,7 @@ onBeforeUnmount(() => {
             &larr; Voltar para projetos
         </button>
 
-        <div v-if="loading" class="flex items-center justify-center py-12">
+        <div v-if="loadingP" class="flex items-center justify-center py-12">
             <div class="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
         </div>
 
@@ -409,27 +410,33 @@ onBeforeUnmount(() => {
 
                     <div class="max-h-[50vh] lg:max-h-[65vh] overflow-y-auto"
                         @scroll.passive="onColumnScroll(column.key, $event)">
-                        <VueDraggable v-model="tasksByStatus[column.key]" group="kanban-tasks" :animation="200"
-                            ghost-class="opacity-40" class="flex min-h-[200px] flex-col gap-2 p-3"
-                            @add="onTaskAdd(column.key, $event)">
-                            <TaskCard v-for="task in getFilteredTasksByStatus(column.key)" :key="task.id" :task="task"
-                                :class="{ 'opacity-50': updatingTaskIds.has(task.id) }" @click="onTaskClick"
-                                @delete="onTaskDelete" />
-                        </VueDraggable>
-
-                        <div v-if="loadingMore[column.key]" class="p-3 text-center text-sm text-gray-400">
+                        <div v-if="loadingT" class="p-3 text-center text-sm text-gray-400">
                             Carregando...
                         </div>
 
-                        <button v-if="taskErrors[column.key]" class="w-full p-3 text-sm text-red-400"
-                            @click="loadMoreTasks(Number(route.params.id), column.key)">
-                            {{ taskErrors[column.key] }}. Tentar novamente.
-                        </button>
+                        <div v-else>
+                            <VueDraggable v-model="tasksByStatus[column.key]" group="kanban-tasks" :animation="200"
+                                ghost-class="opacity-40" class="flex min-h-[200px] flex-col gap-2 p-3"
+                                @add="onTaskAdd(column.key, $event)">
+                                <TaskCard v-for="task in getFilteredTasksByStatus(column.key)" :key="task.id"
+                                    :task="task" :class="{ 'opacity-50': updatingTaskIds.has(task.id) }"
+                                    @click="onTaskClick" @delete="onTaskDelete" />
+                            </VueDraggable>
 
-                        <p v-else-if="!pagination[column.key].hasMore && getFilteredTasksByStatus(column.key).length > 0"
-                            class="p-3 text-center text-xs text-gray-500">
-                            Todas as tarefas foram carregadas.
-                        </p>
+                            <div v-if="loadingMore[column.key]" class="p-3 text-center text-sm text-gray-400">
+                                Carregando...
+                            </div>
+
+                            <button v-if="taskErrors[column.key]" class="w-full p-3 text-sm text-red-400"
+                                @click="loadMoreTasks(Number(route.params.id), column.key)">
+                                {{ taskErrors[column.key] }}. Tentar novamente.
+                            </button>
+
+                            <p v-else-if="!pagination[column.key].hasMore && getFilteredTasksByStatus(column.key).length > 0"
+                                class="p-3 text-center text-xs text-gray-500">
+                                Todas as tarefas foram carregadas.
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
