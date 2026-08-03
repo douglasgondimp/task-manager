@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Project;
-use App\Models\Task;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\CursorPaginator;
@@ -25,7 +24,7 @@ class TaskService
     {
         return $query
             ->when(
-                $filters["search"] ?? null,
+                $filters['search'] ?? null,
                 function ($query, string $search) {
                     $query->where(function ($query) use ($search) {
                         $query->where('title', 'like', "%{$search}%")
@@ -33,19 +32,19 @@ class TaskService
                     });
                 }
             )->when(
-                $filters["status"] ?? null,
-                fn($query, string $status) => $query->where('status', '=', $status)
+                $filters['status'] ?? null,
+                fn ($query, string $status) => $query->where('status', '=', $status)
 
             )->when(
-                $filters["priority"] ?? null,
-                fn($query, string $priority) => $query->where('priority', '=', $priority)
+                $filters['priority'] ?? null,
+                fn ($query, string $priority) => $query->where('priority', '=', $priority)
             )->when(
-                $filters["is_overdue"] ?? false,
-                fn($query) => $query->overdue()
+                ($filters['is_overdue'] ?? null) === true,
+                fn ($query) => $query->overdue()
             )->when(
-                isset($filters["created_at"]) && is_array($filters["created_at"]),
+                isset($filters['created_at']) && is_array($filters['created_at']),
                 function ($query) use ($filters) {
-                    $dates = $filters["created_at"];
+                    $dates = $filters['created_at'];
                     $query->whereBetween('created_at', [Carbon::parse($dates[0])->startOfDay(), Carbon::parse($dates[1])->endOfDay()]);
                 }
             );
