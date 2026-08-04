@@ -301,6 +301,7 @@ npm run lint
 - Pinia mantém o estado compartilhado, enquanto os composables coordenam a API e os estados de interface.
 - Status e prioridades são representados por enums no backend para evitar valores inválidos.
 - A exclusão de tarefas é lógica, permitindo preservar os registros no banco de dados.
+- O filtro por status das tarefas mostra apenas as tarefas que estão na coluna do status filrado, mantendo as colunas visíveis, porém, sem os registros
 
 
 
