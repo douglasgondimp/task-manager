@@ -93,7 +93,7 @@ onUnmounted(() => {
 <template>
     <Teleport to="body">
         <Transition name="alert">
-            <div v-if="modelValue" class="absolute top-[20px] right-[15px] z-150" @click="close">
+            <div v-if="modelValue" class="fixed top-[20px] right-[15px] z-150" @click="close">
                 <div :class="[config.bg, config.border, config.textColor]" class="relative rounded-lg border p-4"
                     @click.stop>
                     <div class="flex items-start gap-3">
