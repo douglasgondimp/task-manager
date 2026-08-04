@@ -256,6 +256,18 @@ async function onUpdateTask(data: {
     }
 }
 
+async function retryTaskColumn(status: TaskStatus): Promise<void> {
+    const projectId = Number(route.params.id)
+    const currentPagination = pagination.value[status]
+
+    if (currentPagination.nextCursor) {
+        await loadMoreTasks(projectId, status, buildActiveFilters())
+        return
+    }
+
+    await fetchTasks(projectId, buildActiveFilters())
+}
+
 // Filters
 function applyFilters() {
     // Set status filter for client-side filtering
@@ -460,8 +472,8 @@ onBeforeUnmount(() => {
                                 Carregando...
                             </div>
 
-                            <button v-if="taskErrors[column.key]" class="w-full p-3 text-sm text-red-400"
-                                @click="loadMoreTasks(Number(route.params.id), column.key, buildActiveFilters())">
+                            <button v-if="taskErrors[column.key]" class="w-full p-3 cursor-pointer text-sm text-red-400"
+                                @click="retryTaskColumn(column.key)">
                                 {{ taskErrors[column.key] }}. Tentar novamente.
                             </button>
 
