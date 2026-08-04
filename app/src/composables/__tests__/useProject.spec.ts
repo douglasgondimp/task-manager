@@ -10,11 +10,13 @@ import type { CursorPaginatedResponse } from '@/interfaces/paginate'
 
 vi.mock('@/services/project.service', () => ({
     projectService: {
-        list: vi.fn(),
-        getById: vi.fn(),
-        create: vi.fn(),
-        update: vi.fn(),
-        delete: vi.fn(),
+        list: vi.fn<
+            (params?: ProjectListParams) => Promise<CursorPaginatedResponse<Project>>
+        >(),
+        getById: vi.fn<(id: number) => Promise<Project>>(),
+        create: vi.fn<(data: unknown) => Promise<ProjectCreated>>(),
+        update: vi.fn<(id: number, data: unknown) => Promise<Project>>(),
+        delete: vi.fn<(id: number) => Promise<void>>(),
     },
 }))
 

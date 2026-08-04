@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
+defineOptions({ name: 'AppAlert' })
+
 type AlertType = 'success' | 'error' | 'info' | 'warning'
 
 const props = withDefaults(
