@@ -70,6 +70,15 @@ const filterOverdue = ref(false)
 const filterDateFrom = ref('')
 const filterDateTo = ref('')
 
+function buildActiveFilters(): TaskListParams {
+    return {
+        search: filterSearch.value || undefined,
+        priority: filterPriority.value || undefined,
+        is_overdue: filterOverdue.value || undefined,
+        created_at: (filterDateFrom.value || filterDateTo.value) ? [filterDateFrom.value || null, filterDateTo.value || null] : undefined,
+    }
+}
+
 let debounceTimer: ReturnType<typeof setTimeout>
 
 const columns = [
@@ -122,16 +131,9 @@ async function onColumnScroll(
     const distanceFromBottom =
         element.scrollHeight - element.scrollTop - element.clientHeight
 
-    const filters: TaskListParams = {
-        search: filterSearch.value || undefined,
-        priority: filterPriority.value || undefined,
-        is_overdue: filterOverdue.value || undefined,
-        created_at: (filterDateFrom.value && filterDateTo.value) ? [filterDateFrom.value, filterDateTo.value] : undefined,
-    }
-
     if (distanceFromBottom > 200) return
 
-    await loadMoreTasks(Number(route.params.id), status, filters)
+    await loadMoreTasks(Number(route.params.id), status, buildActiveFilters())
 }
 
 async function onCreateTask(data: {
@@ -256,17 +258,10 @@ async function onUpdateTask(data: {
 
 // Filters
 function applyFilters() {
-    const filters: TaskListParams = {
-        search: filterSearch.value || undefined,
-        priority: filterPriority.value || undefined,
-        is_overdue: filterOverdue.value || undefined,
-        created_at: (filterDateFrom.value && filterDateTo.value) ? [filterDateFrom.value, filterDateTo.value] : undefined,
-    }
-
     // Set status filter for client-side filtering
     setStatusFilter(filterStatus.value || null)
 
-    loadProjectTasks(filters)
+    loadProjectTasks(buildActiveFilters())
 }
 
 function resetFilters() {
@@ -466,7 +461,7 @@ onBeforeUnmount(() => {
                             </div>
 
                             <button v-if="taskErrors[column.key]" class="w-full p-3 text-sm text-red-400"
-                                @click="loadMoreTasks(Number(route.params.id), column.key)">
+                                @click="loadMoreTasks(Number(route.params.id), column.key, buildActiveFilters())">
                                 {{ taskErrors[column.key] }}. Tentar novamente.
                             </button>
 

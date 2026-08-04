@@ -51,7 +51,7 @@ export interface TaskListParams {
     status?: TaskStatus
     priority?: TaskPriority | null
     is_overdue?: boolean
-    created_at?: [string, string] | [] | null
+    created_at?: [string | null, string | null] | [] | null
     cursor?: string | null
 }
 
