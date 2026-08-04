@@ -118,7 +118,7 @@ async function onTaskAdd(
         return
     }
 
-    await fetchTasks(Number(route.params.id))
+    await fetchTasks(Number(route.params.id), buildActiveFilters())
     alert.showAlert('error', 'Ocorreu um erro ao atualizar a tarefa')
 
 }
@@ -517,7 +517,7 @@ onBeforeUnmount(() => {
             <div class="space-y-4">
                 <p class="text-sm text-gray-300">
                     Tem certeza que deseja excluir a tarefa <strong class="text-white">{{ taskToDelete?.title
-                    }}</strong>?
+                        }}</strong>?
                 </p>
                 <div class="flex justify-end gap-3">
                     <button @click="cancelDeleteTask"
