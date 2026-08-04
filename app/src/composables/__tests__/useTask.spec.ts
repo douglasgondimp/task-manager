@@ -5,12 +5,18 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useTask } from '@/composables/useTask'
 import { taskService } from '@/services/task.service'
-import type { Task, TaskStatus } from '@/interfaces/task'
+import type { Task, TaskListParams, TaskStatus } from '@/interfaces/task'
 import type { CursorPaginatedResponse } from '@/interfaces/paginate'
 
 vi.mock('@/services/task.service', () => ({
     taskService: {
-        listByProject: vi.fn(),
+        listByProject: vi.fn<
+            (
+                projectId: number,
+                cursor?: string | null,
+                filters?: TaskListParams,
+            ) => Promise<CursorPaginatedResponse<Task>>
+        >(),
     },
 }))
 
@@ -144,6 +150,44 @@ describe('useTask', () => {
 
             expect(taskService.listByProject).toHaveBeenCalledTimes(1)
             expect(taskService.listByProject).toHaveBeenCalledWith(1, 'cursor123', {
+                status: 'todo',
+            })
+        })
+
+        it('preserves all active filters and column status when loading more tasks', async () => {
+            const { fetchTasks, loadMoreTasks } = useTask()
+
+            const filters: TaskListParams = {
+                search: 'documentação',
+                priority: 'high',
+                is_overdue: true,
+                created_at: ['2026-07-01', '2026-07-31'],
+            }
+
+            vi.mocked(taskService.listByProject).mockResolvedValue(
+                createMockResponse(
+                    [createMockTask(1, 'todo')],
+                    'cursor123'
+                ),
+            )
+
+            await fetchTasks(1, filters)
+
+            // Reset mock call history to isolate loadMore calls
+            vi.clearAllMocks()
+
+            vi.mocked(taskService.listByProject).mockResolvedValue(
+                createMockResponse([createMockTask(2, 'todo')], null),
+            )
+
+            await loadMoreTasks(1, 'todo', filters)
+
+            expect(taskService.listByProject).toHaveBeenCalledTimes(1)
+            expect(taskService.listByProject).toHaveBeenCalledWith(1, 'cursor123', {
+                search: 'documentação',
+                priority: 'high',
+                is_overdue: true,
+                created_at: ['2026-07-01', '2026-07-31'],
                 status: 'todo',
             })
         })
